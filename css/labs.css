@@ -1,0 +1,440 @@
+/* ============================================================
+   labs.css — Add Laboratory modal styles
+   LabGuy Application
+   ============================================================ */
+
+/* ── Overlay ─────────────────────────────────────────────── */
+#lab-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 8, 18, 0.75);
+  backdrop-filter: blur(6px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+#lab-modal-overlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Modal card ──────────────────────────────────────────── */
+.lab-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  width: 480px;
+  max-width: 92vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(46,204,113,0.08);
+  transform: translateY(16px) scale(0.98);
+  transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+  overflow: hidden;
+}
+#lab-modal-overlay.show .lab-modal {
+  transform: translateY(0) scale(1);
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.lab-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.lab-modal-icon {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  background: rgba(46,204,113,0.12);
+  border: 1px solid rgba(46,204,113,0.25);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent-green);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.lab-modal-header h3 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 2px;
+}
+.lab-modal-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+}
+.lab-modal-close {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.lab-modal-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.06); }
+
+/* ── Body ────────────────────────────────────────────────── */
+.lab-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+.lab-modal-body::-webkit-scrollbar { width: 4px; }
+.lab-modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Fields ──────────────────────────────────────────────── */
+.lab-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  flex: 1;
+}
+.lab-modal-field-sm { flex: 0 0 100px; }
+
+.lab-modal-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.lab-modal-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+.lab-modal-input:focus {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 3px rgba(46,204,113,0.12);
+}
+.lab-modal-input::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+/* ── Divider ─────────────────────────────────────────────── */
+.lab-modal-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0 16px;
+}
+.lab-modal-divider::before,
+.lab-modal-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.lab-modal-divider span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+
+/* ── Unit entry rows ─────────────────────────────────────── */
+.lab-unit-entry {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  position: relative;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+.lab-unit-entry.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.lab-unit-entry-fields {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.lab-unit-remove-btn {
+  position: absolute;
+  top: 10px; right: 10px;
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.lab-unit-remove-btn:hover {
+  background: rgba(231,76,60,0.15);
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+/* ── Add unit button ─────────────────────────────────────── */
+.lab-add-unit-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+  margin-top: 4px;
+}
+.lab-add-unit-btn:hover {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: rgba(46,204,113,0.05);
+}
+
+/* ── Footer actions ──────────────────────────────────────── */
+.lab-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.lab-modal-btn {
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex; align-items: center; gap: 7px;
+}
+.lab-modal-btn.cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.lab-modal-btn.cancel:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+.lab-modal-btn.confirm {
+  background: var(--accent-green);
+  border: none;
+  color: #fff;
+}
+.lab-modal-btn.confirm:hover { background: var(--accent-green-hover); transform: translateY(-1px); }
+.lab-modal-btn.confirm:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+/* ── Unit entry icon ─────────────────────────────────────── */
+.lab-unit-entry-icon {
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 22px; /* align with input */
+}
+
+/* ── Connector line from parent to child ─────────────────── */
+.lab-unit-entry-connector {
+  display: none;
+  width: 2px;
+  height: 12px;
+  background: var(--border);
+  margin-left: 14px;
+  margin-bottom: 2px;
+}
+.lab-unit-entry-connector.show { display: block; }
+
+/* ── Lab browser ─────────────────────────────────────────── */
+.lab-browser-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.lab-browser-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--accent-green);
+  background: rgba(46,204,113,0.1);
+  color: var(--accent-green);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.lab-browser-add-btn:hover { background: var(--accent-green); color: #fff; }
+
+.lab-browser {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 2px;
+}
+.lab-browser::-webkit-scrollbar { width: 4px; }
+.lab-browser::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Lab card ────────────────────────────────────────────── */
+.lab-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.lab-card:hover { border-color: rgba(46,204,113,0.2); }
+
+.lab-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.lab-card-header:hover { background: rgba(255,255,255,0.03); }
+
+.lab-card-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.lab-icon { color: #45aaf2; font-size: 13px; }
+
+.lab-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lab-stat {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.occupied-stat {
+  background: rgba(231,76,60,0.1);
+  border: 1px solid rgba(231,76,60,0.2);
+  color: #e74c3c;
+}
+.empty-stat {
+  background: rgba(46,204,113,0.1);
+  border: 1px solid rgba(46,204,113,0.2);
+  color: var(--accent-green);
+}
+.lab-chevron {
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: transform 0.25s ease;
+  margin-left: 4px;
+}
+.lab-card.expanded .lab-chevron { transform: rotate(180deg); }
+
+/* ── Tree (hidden by default, shown when expanded) ───────── */
+.lab-card-tree {
+  display: none;
+  padding: 6px 0 10px;
+  border-top: 1px solid var(--border);
+}
+.lab-card.expanded .lab-card-tree { display: block; }
+
+.lab-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  transition: background 0.1s;
+}
+.lab-tree-row:hover { background: rgba(255,255,255,0.03); }
+
+.lab-tree-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.lab-spot {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+.lab-spot.occupied {
+  background: rgba(231,76,60,0.1);
+  border: 1px solid rgba(231,76,60,0.25);
+  color: #e74c3c;
+}
+.lab-spot.empty {
+  background: rgba(46,204,113,0.1);
+  border: 1px solid rgba(46,204,113,0.2);
+  color: var(--accent-green);
+}
+
+.side-panel-wide { width: 420px !important; }
+
+/* ── Collapsible tree nodes ───────────────────────────────── */
+.lab-node-children {
+  display: none;
+}
+.lab-node-children.open {
+  display: block;
+}
+.lab-node-chevron {
+  font-size: 9px;
+  color: var(--text-muted);
+  width: 14px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.lab-node-chevron.rotated {
+  transform: rotate(90deg);
+}
+.lab-tree-row.has-kids,
+.lab-tree-name.has-kids {
+  cursor: pointer;
+}
+.lab-tree-row:has(.has-kids):hover {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+}
