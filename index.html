@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lab Guy</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/variables.css"/>
+  <link rel="stylesheet" href="css/auth.css"/>
+  <link rel="stylesheet" href="css/dashboard.css"/>
+  <link rel="stylesheet" href="css/panels.css"/>
+  <link rel="stylesheet" href="css/tutorial.css"/>
+  <link rel="stylesheet" href="css/excel-import.css"/>
+  <link rel="stylesheet" href="css/metadata.css"/>
+  <link rel="stylesheet" href="css/add-sample.css"/>
+  <link rel="stylesheet" href="css/user-management.css"/>
+  <link rel="stylesheet" href="css/lab-capacity.css"/>
+  <link rel="stylesheet" href="css/inventory.css"/>
+  <link rel="stylesheet" href="css/trash.css"/>
+  <link rel="stylesheet" href="css/labs.css"/>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: Login
+════════════════════════════════════════════════════════ -->
+<div id="login-page" class="page auth-page active">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <img src="LabGuy.png" alt="Lab Guy Logo"
+           onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex'"/>
+      <div id="logo-fallback" class="logo-fallback">
+        <i class="fas fa-flask"></i>
+      </div>
+      <div class="brand-name">Lab Guy</div>
+    </div>
+    <h2 class="auth-title">Login</h2>
+    <div class="input-group">
+      <i class="fas fa-envelope"></i>
+      <input id="login-email" class="field-input" type="email" placeholder="Email"/>
+    </div>
+    <div class="input-group">
+      <i class="fas fa-lock"></i>
+      <input id="login-pass" class="field-input" type="password" placeholder="Password"
+             onkeydown="if(event.key==='Enter') doLogin()"/>
+    </div>
+    <button class="btn btn-green" onclick="doLogin()">Login</button>
+    <div class="auth-footer">
+      <button class="auth-link"  onclick="showPage('register-page')">Sign Up</button>
+      <button class="auth-link"  onclick="doForgotPassword()">Forgot Password?</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: Register
+════════════════════════════════════════════════════════ -->
+<div id="register-page" class="page auth-page">
+  <div class="auth-card">
+    <h2 class="auth-title">Create Account</h2>
+    <div class="input-group">
+      <i class="fas fa-user"></i>
+      <div class="input-row">
+        <input id="reg-first" class="field-input" type="text" placeholder="First Name"/>
+        <input id="reg-last"  class="field-input" type="text" placeholder="Last Name"/>
+      </div>
+    </div>
+    <div class="input-group">
+      <i class="fas fa-envelope"></i>
+      <input id="reg-email" class="field-input" type="email" placeholder="Email"/>
+    </div>
+    <div class="input-group">
+      <i class="fas fa-lock"></i>
+      <input id="reg-pass" class="field-input" type="password" placeholder="Password"/>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="terms-check" disabled/>
+      <label>
+        I agree to the
+        <span class="tc-link" onclick="openTermsModal()">Terms and Conditions</span>
+        <span class="tc-hint">(Read terms first)</span>
+      </label>
+    </div>
+    <button class="btn btn-green" onclick="doRegister()">Sign Up</button>
+    <div class="auth-footer">
+      <button class="auth-link-plain" onclick="showPage('login-page')">Back to Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: Dashboard
+════════════════════════════════════════════════════════ -->
+<div id="dashboard-page" class="page dashboard-page">
+
+  <nav class="sidebar-nav" aria-label="Main navigation">
+    <button class="nav-btn" data-panel="panel-profile"
+            title="Profile" onclick="ProfilePanel.open()">
+      <i class="fas fa-user"></i>
+    </button>
+    <button class="nav-btn" data-panel="panel-admin" id="nav-admin-btn"
+            title="Admin Dashboard" onclick="AdminPanel.open()">
+      <i class="fas fa-users-cog"></i>
+    </button>
+    <button class="nav-btn" data-panel="panel-notifications"
+            title="Notifications" onclick="openPanel('panel-notifications')">
+      <i class="fas fa-bell"></i>
+    </button>
+    <button class="nav-btn" data-panel="panel-trash"
+            title="Trash Can" onclick="openPanel('panel-trash')" id="nav-trash-btn">
+      <i class="fas fa-trash"></i>
+    </button>
+    <button class="nav-btn" data-panel="panel-settings"
+            title="Settings" onclick="openPanel('panel-settings')">
+      <i class="fas fa-cog"></i>
+    </button>
+    <button class="nav-btn nav-add" data-panel="panel-widgets"
+            title="Add Widget" onclick="openPanel('panel-widgets')">
+      <i class="fas fa-plus"></i>
+    </button>
+  </nav>
+
+  <main class="dashboard-area">
+    <div class="widget-grid" id="widget-grid"></div>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SIDE PANEL: Widget Picker
+════════════════════════════════════════════════════════ -->
+<aside class="side-panel" id="panel-widgets">
+  <div class="panel-inner">
+    <div class="panel-title">Available Widgets</div>
+    <div class="panel-divider"></div>
+    <div id="widget-list"></div>
+  </div>
+  <div class="panel-footer">
+    <button class="panel-footer-btn red" onclick="closeAllPanels()">
+      <i class="fas fa-times"></i> Close
+    </button>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════
+     SIDE PANEL: Profile Settings
+════════════════════════════════════════════════════════ -->
+<aside class="side-panel" id="panel-profile">
+  <div class="panel-inner">
+    <div class="panel-title">Profile Settings</div>
+    <div class="panel-subtitle">Manage your account and preferences</div>
+    <div class="panel-divider"></div>
+    <div class="profile-card">
+      <div class="avatar" id="profile-avatar">?</div>
+      <div class="profile-info">
+        <h3 id="profile-name">—</h3>
+        <p  id="profile-email">—</p>
+        <div class="role" id="profile-role">Role: —</div>
+      </div>
+    </div>
+    <div class="panel-section-header">Account Actions</div>
+    <div class="panel-section">
+      <button class="action-btn" style="background:var(--accent-blue)"
+              onclick="ProfilePanel.editProfile()">
+        <i class="fas fa-user-edit"></i> Edit Profile Information
+      </button>
+      <button class="action-btn" style="background:var(--accent-orange)"
+              onclick="ProfilePanel.resetPassword()">
+        <i class="fas fa-key"></i> Reset Password
+      </button>
+    </div>
+    <div class="panel-section-header">Preferences</div>
+    <div class="panel-section">
+      <button class="action-btn" style="background:#3a3a5c;color:var(--text-secondary)"
+              onclick="ProfilePanel.openAutoPopulate()">
+        <i class="fas fa-magic"></i> Auto-Populate
+      </button>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <button class="panel-footer-btn dark" onclick="closeAllPanels()">
+      <i class="fas fa-user"></i>
+    </button>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════
+     SIDE PANEL: Notifications
+════════════════════════════════════════════════════════ -->
+<aside class="side-panel" id="panel-notifications">
+  <div class="panel-inner">
+    <div class="panel-title-row">
+      <span class="panel-title-icon"><i class="fas fa-bell"></i></span>
+      <div class="panel-title">Notifications</div>
+    </div>
+    <div class="panel-title-underline"></div>
+    <div class="notif-header-user">
+      <i class="fas fa-user" style="font-size:11px"></i>
+      <span id="notif-user-id">—</span>
+      <span class="notif-badge" id="notif-role-badge">User</span>
+    </div>
+    <div id="notif-list">
+      <div class="notif-empty" id="notif-loading">
+        <i class="fas fa-spinner fa-spin"></i><p>Loading...</p>
+      </div>
+    </div>
+    <div class="notif-footer" id="notif-count">— notifications</div>
+  </div>
+  <div class="panel-footer">
+    <button class="panel-footer-btn dark" onclick="closeAllPanels()">
+      <i class="fas fa-bell"></i>
+    </button>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════
+     SIDE PANEL: Settings
+════════════════════════════════════════════════════════ -->
+<aside class="side-panel" id="panel-trash">
+  <div class="panel-inner">
+    <div class="panel-title">Trash Can</div>
+    <div class="panel-subtitle">Deleted samples — restore or permanently remove</div>
+    <div class="panel-divider"></div>
+    <div id="trash-content">
+      <div class="trash-empty-state">
+        <i class="fas fa-trash-alt"></i>
+        <p>Trash is empty</p>
+      </div>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <button class="panel-footer-btn dark" onclick="closeAllPanels()">
+      <i class="fas fa-trash"></i>
+    </button>
+  </div>
+</aside>
+
+<aside class="side-panel" id="panel-settings">
+  <div class="panel-inner">
+    <div class="panel-title">Settings</div>
+    <div class="panel-subtitle">Manage your account settings and preferences</div>
+    <div class="panel-divider"></div>
+    <div class="panel-section-header">Appearance</div>
+    <div class="panel-section">
+      <div class="settings-toggle-row">
+        <div class="settings-toggle-info">
+          <i class="fas fa-adjust" style="color:var(--accent-green)"></i>
+          <div>
+            <div class="settings-toggle-label">Light Mode</div>
+            <div class="settings-toggle-desc">Switch to a lighter interface</div>
+          </div>
+        </div>
+        <button class="theme-toggle" id="theme-toggle-btn"
+                onclick="SettingsPanel.toggleTheme()">
+          <div class="theme-toggle-thumb"></div>
+        </button>
+      </div>
+    </div>
+    <div class="panel-section-header">Quick Actions</div>
+    <div class="panel-section">
+      <button class="action-btn" style="background:var(--accent-red)"
+              onclick="doLogout()">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+    <div id="admin-request-block">
+      <div class="panel-section-header">Access</div>
+      <div class="panel-section">
+        <button class="action-btn" style="background:var(--accent-blue)"
+                onclick="SettingsPanel.requestAdminAccess()" id="admin-request-btn">
+          <i class="fas fa-user-shield"></i> Request Admin Access
+        </button>
+      </div>
+    </div>
+    <div class="panel-section-header">Dashboard</div>
+    <div class="panel-section">
+      <button class="action-btn" style="background:var(--bg-input);color:var(--text-secondary)"
+              onclick="SettingsPanel.clearDashboard()">
+        <i class="fas fa-th-large"></i> Clear Dashboard Layout
+      </button>
+    </div>
+    <div class="panel-section-header">Legal</div>
+    <div class="panel-section">
+      <button class="action-btn" style="background:var(--bg-input);color:var(--text-secondary)"
+              onclick="openTermsModal()">
+        <i class="fas fa-file-alt"></i> Terms and Conditions
+      </button>
+    </div>
+    <div class="panel-section-header">About</div>
+    <div class="panel-section">
+      <div class="settings-about-row">
+        <span class="settings-about-label"><i class="fas fa-flask"></i> LabGuy</span>
+        <span class="settings-about-version" id="settings-version">v—</span>
+      </div>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <button class="panel-footer-btn dark" onclick="closeAllPanels()">
+      <i class="fas fa-cog"></i>
+    </button>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════
+     SIDE PANEL: Admin Dashboard
+════════════════════════════════════════════════════════ -->
+<aside class="side-panel side-panel-wide" id="panel-admin">
+  <div class="panel-inner">
+    <div class="panel-title">Admin Dashboard</div>
+    <div class="panel-subtitle">Manage your laboratory and system settings</div>
+    <div class="panel-divider"></div>
+
+    <!-- Lab browser -->
+    <div class="lab-browser-header">
+      <span class="panel-section-header" style="margin:0">Laboratories</span>
+      <button class="lab-browser-add-btn" onclick="AdminPanel.addLaboratory()">
+        <i class="fas fa-plus"></i> New Lab
+      </button>
+    </div>
+    <div id="lab-browser" class="lab-browser"></div>
+
+    <div class="panel-divider"></div>
+    <div class="panel-section-header">System Administration</div>
+    <div class="panel-section">
+      <button class="action-btn" style="background:var(--accent-green)"
+              onclick="MetadataPanel.open()">
+        <i class="fas fa-database"></i> Define Sample Metadata
+      </button>
+      <button class="action-btn" style="background:var(--accent-red)"
+              onclick="UserManagement.open()">
+        <i class="fas fa-users-cog"></i> User Management
+      </button>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <button class="panel-footer-btn dark" onclick="closeAllPanels()">
+      <i class="fas fa-users-cog"></i>
+    </button>
+  </div>
+</aside>
+
+<!-- Overlay -->
+<div id="overlay"></div>
+<!-- Toast -->
+<div id="toast" aria-live="polite"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCRIPTS — Load order:
+       1. Firebase CDN (must be first)
+       2. firebase-config.js (initializes Firebase)
+       3. firebase-db.js (DB helpers)
+       4. app.js (global state/routing)
+       5. dashboard.js + panels
+       6. auth.js (last — depends on everything above)
+═══════════════════════════════════════════════════════ -->
+
+<!-- 1. Firebase SDK (compat version — no bundler needed) -->
+<!-- GridStack JS -->
+
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- App scripts — order matters -->
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-db.js"></script>
+<script src="js/app.js"></script>
+<script src="js/maintenance.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/panels/widgets.js"></script>
+<script src="js/panels/notifications.js"></script>
+<script src="js/panels/profile.js"></script>
+<script src="js/panels/admin.js"></script>
+<script src="js/panels/settings.js"></script>
+<!-- SheetJS for Excel parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="js/panels/excel-import.js"></script>
+<script src="js/panels/metadata.js"></script>
+<script src="js/panels/add-sample.js"></script>
+<script src="js/panels/user-management.js"></script>
+<script src="js/panels/lab-capacity.js"></script>
+<script src="js/panels/inventory.js"></script>
+<script src="js/panels/bulk-add.js"></script>
+<script src="js/panels/trash.js"></script>
+<script src="js/panels/export-data.js"></script>
+<script src="js/tutorial.js"></script>
+<script src="js/auth.js"></script>
+
+</body>
+</html>

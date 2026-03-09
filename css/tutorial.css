@@ -1,0 +1,159 @@
+/* ============================================================
+   tutorial.css — First-time onboarding tutorial styles
+   LabGuy Application
+   ============================================================ */
+
+/* ── Overlay — dark backdrop only, no blur ───────────────── */
+#tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+#tutorial-overlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
+#tutorial-overlay.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Dark fill behind modal */
+#tutorial-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 8, 18, 0.75);
+}
+
+/* ── Spotlight cutout ────────────────────────────────────── */
+#tutorial-spotlight {
+  position: fixed;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 4px var(--accent-green),
+    0 0 0 9999px rgba(8, 8, 18, 0.75);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2001;
+  pointer-events: none;
+}
+/* Pulse ring around spotlight */
+#tutorial-spotlight::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 20px;
+  border: 2px solid rgba(46, 204, 113, 0.5);
+  animation: spotlightPulse 1.4s ease-in-out infinite;
+}
+@keyframes spotlightPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1);    }
+  50%       { opacity: 1;   transform: scale(1.04); }
+}
+
+/* ── Modal card ──────────────────────────────────────────── */
+#tutorial-modal {
+  position: absolute;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px 40px;
+  width: 420px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(46,204,113,0.15);
+  z-index: 2002;
+  animation: tutorialPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Positioned dynamically by JS */
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+@keyframes tutorialPop {
+  from { transform: translate(-50%, -50%) scale(0.88); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+}
+
+/* ── Icon ────────────────────────────────────────────────── */
+#tutorial-icon-wrap {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(46,204,113,0.12);
+  border: 2px solid rgba(46,204,113,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+}
+#tutorial-icon { font-size: 26px; color: var(--accent-green); }
+
+/* ── Text ────────────────────────────────────────────────── */
+#tutorial-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+#tutorial-content {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text-primary);
+  opacity: 0.88;
+  margin-bottom: 24px;
+}
+#tutorial-content strong { color: var(--accent-green); font-weight: 600; }
+
+/* ── Step dots ───────────────────────────────────────────── */
+#tutorial-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-bottom: 24px;
+}
+.tutorial-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.25s ease;
+}
+.tutorial-dot.active { background: var(--accent-green); width: 22px; border-radius: 4px; }
+.tutorial-dot.done   { background: rgba(46,204,113,0.4); }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+#tutorial-actions { display: flex; gap: 10px; justify-content: center; }
+
+#tutorial-skip {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: var(--transition);
+}
+#tutorial-skip:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+
+#tutorial-next {
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent-green);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#tutorial-next:hover { background: var(--accent-green-hover); transform: translateY(-1px); }
