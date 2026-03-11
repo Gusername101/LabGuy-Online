@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>LabGuy</title>
+  <title>Lab Guy</title>
+  <link rel="icon" href="LabGuy.png" type="image/png"/>
 
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -52,7 +53,7 @@
     </div>
     <button class="btn btn-green" onclick="doLogin()">Login</button>
     <div class="auth-footer">
-      <button class="auth-link"  onclick="showPage('register-page')">Sign Up</button>
+      <button class="auth-link" onclick="showPage('register-page'); _checkRegCodeRequired()">Sign Up</button>
       <button class="auth-link"  onclick="doForgotPassword()">Forgot Password?</button>
     </div>
   </div>
@@ -78,6 +79,10 @@
     <div class="input-group">
       <i class="fas fa-lock"></i>
       <input id="reg-pass" class="field-input" type="password" placeholder="Password"/>
+    </div>
+    <div class="input-group" id="reg-code-group" style="display:none">
+      <i class="fas fa-key"></i>
+      <input id="reg-code" class="field-input" type="password" placeholder="Lab Access Code"/>
     </div>
     <div class="checkbox-row">
       <input type="checkbox" id="terms-check" disabled/>
@@ -245,6 +250,8 @@
     <div class="panel-title">Settings</div>
     <div class="panel-subtitle">Manage your account settings and preferences</div>
     <div class="panel-divider"></div>
+
+    <!-- Appearance -->
     <div class="panel-section-header">Appearance</div>
     <div class="panel-section">
       <div class="settings-toggle-row">
@@ -261,41 +268,50 @@
         </button>
       </div>
     </div>
-    <div class="panel-section-header">Quick Actions</div>
-    <div class="panel-section">
+
+    <!-- Account -->
+    <div class="panel-section-header">Account</div>
+    <div class="panel-section" style="display:flex;flex-direction:column;gap:8px">
       <button class="action-btn" style="background:var(--accent-red)"
               onclick="doLogout()">
         <i class="fas fa-sign-out-alt"></i> Logout
       </button>
-    </div>
-    <div id="admin-request-block">
-      <div class="panel-section-header">Access</div>
-      <div class="panel-section">
+      <div id="admin-request-block">
         <button class="action-btn" style="background:var(--accent-blue)"
                 onclick="SettingsPanel.requestAdminAccess()" id="admin-request-btn">
           <i class="fas fa-user-shield"></i> Request Admin Access
         </button>
       </div>
     </div>
-    <div class="panel-section-header">Dashboard</div>
-    <div class="panel-section">
+
+    <!-- Dashboard & Records -->
+    <div class="panel-section-header">Dashboard & Records</div>
+    <div class="panel-section" style="display:flex;flex-direction:column;gap:8px">
       <button class="action-btn" style="background:var(--bg-input);color:var(--text-secondary)"
               onclick="SettingsPanel.clearDashboard()">
         <i class="fas fa-th-large"></i> Clear Dashboard Layout
       </button>
+      <div id="archive-block" style="display:none">
+        <button class="action-btn" style="background:var(--bg-input);color:var(--text-secondary);width:100%"
+                onclick="Backup.download()">
+          <i class="fas fa-archive"></i> Download Lab Archive
+        </button>
+        <p style="font-size:11px;color:var(--text-muted);margin:8px 0 0 0;line-height:1.5">
+          Full snapshot of all labs, inventory and metadata. Keep in a safe location for record-keeping.
+        </p>
+      </div>
     </div>
-    <div class="panel-section-header">Legal</div>
-    <div class="panel-section">
+
+    <!-- Legal & About -->
+    <div class="panel-section-header">Legal & About</div>
+    <div class="panel-section" style="display:flex;flex-direction:column;gap:8px">
       <button class="action-btn" style="background:var(--bg-input);color:var(--text-secondary)"
               onclick="openTermsModal()">
         <i class="fas fa-file-alt"></i> Terms and Conditions
       </button>
-    </div>
-    <div class="panel-section-header">About</div>
-    <div class="panel-section">
       <div class="settings-about-row">
         <span class="settings-about-label"><i class="fas fa-flask"></i> LabGuy</span>
-        <span class="settings-about-version" id="settings-version">v—</span>
+        <button class="settings-about-version" id="settings-version" onclick="SettingsPanel.openChangelog()">v—</button>
       </div>
     </div>
   </div>
@@ -336,6 +352,57 @@
         <i class="fas fa-users-cog"></i> User Management
       </button>
     </div>
+
+    <div class="panel-divider"></div>
+    <div class="panel-section-header">Offline Access</div>
+    <div class="panel-section">
+      <div class="settings-toggle-row">
+        <div class="settings-toggle-info">
+          <i class="fas fa-wifi-slash" style="color:var(--accent-green)"></i>
+          <div>
+            <div class="settings-toggle-label">Offline Mode</div>
+            <div class="settings-toggle-desc">Keeps the app working if the internet drops. Any changes made will sync automatically once the connection returns. A page refresh is needed to activate.</div>
+          </div>
+        </div>
+        <button class="theme-toggle" id="offline-mode-toggle"
+                onclick="AdminPanel.toggleOfflineMode()">
+          <div class="theme-toggle-thumb"></div>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-divider"></div>
+    <div class="panel-section-header">Security</div>
+    <div class="panel-section">
+      <div class="settings-toggle-row">
+        <div class="settings-toggle-info">
+          <i class="fas fa-key" style="color:var(--accent-green)"></i>
+          <div>
+            <div class="settings-toggle-label">Require Access Code</div>
+            <div class="settings-toggle-desc">New users must enter a code to register</div>
+          </div>
+        </div>
+        <button class="theme-toggle" id="reg-code-toggle"
+                onclick="AdminPanel.toggleRegCode()">
+          <div class="theme-toggle-thumb"></div>
+        </button>
+      </div>
+      <div id="reg-code-editor" style="display:none;margin-top:12px">
+        <div class="input-group" style="margin-bottom:8px">
+          <i class="fas fa-lock"></i>
+          <input id="admin-reg-code" class="field-input" type="password"
+                 placeholder="Set access code…"/>
+          <button class="show-hide-btn" onclick="AdminPanel.toggleCodeVisibility()"
+                  id="code-vis-btn" title="Show/hide code">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+        <button class="action-btn" style="background:var(--accent-green)"
+                onclick="AdminPanel.saveRegCode()">
+          <i class="fas fa-save"></i> Save Code
+        </button>
+      </div>
+    </div>
   </div>
   <div class="panel-footer">
     <button class="panel-footer-btn dark" onclick="closeAllPanels()">
@@ -344,6 +411,23 @@
   </div>
 </aside>
 
+
+<!-- ═══════════════════════════════════════════════════════
+     CHANGELOG MODAL
+═══════════════════════════════════════════════════════ -->
+<div id="changelog-overlay">
+  <div class="changelog-modal">
+    <div class="changelog-header">
+      <div class="changelog-title"><i class="fas fa-clipboard-list"></i> Update History</div>
+      <button class="changelog-close" onclick="SettingsPanel.closeChangelog()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="changelog-body" id="changelog-body">
+      <div class="um-empty"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+    </div>
+  </div>
+</div>
 <!-- Overlay -->
 <div id="overlay"></div>
 <!-- Toast -->
@@ -392,6 +476,7 @@
 <script src="js/panels/bulk-add.js"></script>
 <script src="js/panels/trash.js"></script>
 <script src="js/panels/export-data.js"></script>
+<script src="js/panels/backup.js"></script>
 <script src="js/tutorial.js"></script>
 <script src="js/auth.js"></script>
 

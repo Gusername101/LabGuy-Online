@@ -3,6 +3,18 @@
    LabGuy Application
    ============================================================ */
 
+// ── Offline persistence (admin controlled) ────────────────
+if (localStorage.getItem('labguy_offline_mode') === 'true') {
+  window.fbDB.enablePersistence({ synchronizeTabs: false })
+    .catch(err => {
+      if (err.code === 'failed-precondition') {
+        console.warn('[LabGuy] Offline persistence unavailable — multiple tabs open.');
+      } else if (err.code === 'unimplemented') {
+        console.warn('[LabGuy] Offline persistence not supported in this browser.');
+      }
+    });
+}
+
 // ── Global state ─────────────────────────────────────────
 const App = {
   currentUser: null,
@@ -33,6 +45,10 @@ function openPanel(panelId) {
   if (panelId === 'panel-settings') {
     SettingsPanel.checkPendingRequest();
     SettingsPanel.loadVersion();
+    SettingsPanel.showArchiveBlock();
+  }
+  if (panelId === 'panel-admin') {
+    AdminPanel.loadRegCodeSettings();
   }
 }
 

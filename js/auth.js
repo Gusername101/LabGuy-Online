@@ -153,7 +153,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         NotifPanel.startListening();
         if (window.LabCapacity) LabCapacity.startListening();
         if (window.TrashCan) TrashCan.startListening();
-        if (window.TrashCan) TrashCan.startListening();
         SettingsPanel.checkPendingRequest();
         _startInactivityWatch();
         _startPresence(firebaseUser.uid);
@@ -171,6 +170,66 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
+
+// ── Login audit ───────────────────────────────────────────
+const LOGIN_AUDIT_RETENTION_DAYS = 90;
+
+async function _writeLoginAudit(uid, name, type = 'login') {
+  try {
+    const ua      = navigator.userAgent;
+    const browser = _parseBrowser(ua);
+    const os      = _parseOS(ua);
+    await window.fbDB.ref('login_audit').push({
+      uid,
+      name,
+      type,
+      browser,
+      os,
+      timestamp: { '.sv': 'timestamp' },
+    });
+    // Purge entries older than 90 days on every login (fire and forget)
+    _purgeOldLoginAudit();
+  } catch(e) {
+    console.warn('[LabGuy] Login audit write failed:', e);
+  }
+}
+
+async function _purgeOldLoginAudit() {
+  try {
+    const cutoff = Date.now() - (LOGIN_AUDIT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    const snap   = await window.fbDB.ref('login_audit')
+      .orderByChild('timestamp')
+      .endAt(cutoff)
+      .once('value');
+    if (!snap.exists()) return;
+    const updates = {};
+    snap.forEach(child => { updates[child.key] = null; });
+    await window.fbDB.ref('login_audit').update(updates);
+    console.log(`[LabGuy] Purged ${Object.keys(updates).length} old login audit entries.`);
+  } catch(e) {
+    console.warn('[LabGuy] Login audit purge failed:', e);
+  }
+}
+
+function _parseBrowser(ua) {
+  if (/Edg\//.test(ua))     return 'Edge';
+  if (/OPR\//.test(ua))     return 'Opera';
+  if (/Chrome\//.test(ua))  return 'Chrome';
+  if (/Firefox\//.test(ua)) return 'Firefox';
+  if (/Safari\//.test(ua))  return 'Safari';
+  return 'Unknown';
+}
+
+function _parseOS(ua) {
+  if (/Windows NT 10/.test(ua)) return 'Windows 10/11';
+  if (/Windows NT/.test(ua))    return 'Windows';
+  if (/Mac OS X/.test(ua))      return 'macOS';
+  if (/Android/.test(ua))       return 'Android';
+  if (/iPhone|iPad/.test(ua))   return 'iOS';
+  if (/Linux/.test(ua))         return 'Linux';
+  return 'Unknown';
+}
+
 // ── Login ─────────────────────────────────────────────────
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
@@ -185,15 +244,22 @@ async function doLogin() {
     const cred    = await window.fbAuth.signInWithEmailAndPassword(email, pass);
     const profile = await _resolveProfile(cred.user);
     App.currentUser = { uid: cred.user.uid, ...profile };
+    if (profile.role !== 'updates') _writeLoginAudit(cred.user.uid, profile.full_name, 'login');
+
+    // Updates role gets redirected to the publisher page
+    if (profile.role === 'updates') {
+      window.location.href = 'updates.html';
+      return;
+    }
+
     _populateProfilePanel();
     showPage('dashboard-page');
-    showToast(`Welcome back, ${profile.firstName}!`, 'success');
+    showToast(`Welcome back, ${profile.full_name?.split(' ')[0] || 'there'}!`, 'success');
     Dashboard.init();
     SettingsPanel.loadTheme();
     if (window.Maintenance) Maintenance.startListening();
     NotifPanel.startListening();
     if (window.LabCapacity) LabCapacity.startListening();
-    if (window.TrashCan) TrashCan.startListening();
     if (window.TrashCan) TrashCan.startListening();
     SettingsPanel.checkPendingRequest();
     _startInactivityWatch();
@@ -249,6 +315,22 @@ async function doRegister() {
   }
 
   try {
+    // Check if registration code is required
+    const reqSnap = await window.fbDB.ref('system/requireRegistrationCode').once('value');
+    if (reqSnap.exists() && reqSnap.val() === true) {
+      const enteredCode = document.getElementById('reg-code')?.value.trim();
+      if (!enteredCode) {
+        showToast('A lab access code is required to register.', 'error');
+        return;
+      }
+      const codeSnap = await window.fbDB.ref('system/registrationCode').once('value');
+      const realCode = codeSnap.exists() ? codeSnap.val() : '';
+      if (enteredCode !== realCode) {
+        showToast('Incorrect access code. Please check with your administrator.', 'error');
+        return;
+      }
+    }
+
     const cred    = await window.fbAuth.createUserWithEmailAndPassword(email, pass);
     const uid     = cred.user.uid;
     const profile = { full_name: `${firstName} ${lastName}`.trim(), email, role: 'user' };
@@ -257,12 +339,25 @@ async function doRegister() {
     _populateProfilePanel();
     showPage('dashboard-page');
     showToast(`Account created! Welcome, ${firstName}!`, 'success');
+    _writeLoginAudit(uid, profile.full_name, 'register');
     Dashboard.init();
     setTimeout(() => Tutorial.checkAndShow(), 700);
   } catch (err) {
     showToast(_authErrorMessage(err.code), 'error');
     console.error('Register error:', err.code, err.message);
   }
+}
+
+// Show/hide access code field on register page based on system setting
+async function _checkRegCodeRequired() {
+  try {
+    const snap  = await window.fbDB.ref('system/requireRegistrationCode').once('value');
+    const show  = snap.exists() && snap.val() === true;
+    const group = document.getElementById('reg-code-group');
+    const input = document.getElementById('reg-code');
+    if (group) group.style.display = show ? '' : 'none';
+    if (input) input.value = '';
+  } catch(e) {}
 }
 
 // ── Logout ────────────────────────────────────────────────
@@ -377,7 +472,8 @@ function _authErrorMessage(code) {
 
 // ── Expose to window ──────────────────────────────────────
 window.doLogin          = doLogin;
-window.doRegister       = doRegister;
+window.doRegister            = doRegister;
+window._checkRegCodeRequired = _checkRegCodeRequired;
 window.doLogout         = doLogout;
 
 // ── Terms & Conditions Modal ──────────────────────────────

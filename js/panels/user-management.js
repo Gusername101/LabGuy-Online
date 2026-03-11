@@ -78,6 +78,9 @@ const UserManagement = (() => {
           <button class="um-tab" id="um-tab-presence" onclick="UserManagement.switchTab('presence')">
             <i class="fas fa-circle" style="color:#2ecc71;font-size:9px"></i> Online
           </button>
+          <button class="um-tab" id="um-tab-loginlog" onclick="UserManagement.switchTab('loginlog')">
+            <i class="fas fa-sign-in-alt"></i> Login History
+          </button>
         </div>
 
         <div class="um-body">
@@ -117,7 +120,6 @@ const UserManagement = (() => {
                 <select class="um-select" id="um-role-select">
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
-                  <option value="developer">Developer</option>
                 </select>
               </div>
               <button class="um-save-btn" onclick="UserManagement.saveRole()">
@@ -163,6 +165,25 @@ const UserManagement = (() => {
             </div>
           </div>
 
+          <div class="um-tab-pane" id="um-pane-loginlog">
+            <div class="um-loginlog-toolbar">
+              <input id="um-loginlog-search" class="field-input" type="text"
+                     placeholder="Filter by name…"
+                     oninput="UserManagement.filterLoginLog()"/>
+              <select id="um-loginlog-type" class="field-input"
+                      onchange="UserManagement.filterLoginLog()">
+                <option value="">All events</option>
+                <option value="login">Login</option>
+  <option value="register">Registration</option>
+              </select>
+            </div>
+            <div id="um-loginlog-list">
+              <div class="um-empty">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+              </div>
+            </div>
+          </div>
+
           <div class="um-tab-pane" id="um-pane-presence">
             <div id="um-presence-list">
               <div class="um-empty">
@@ -201,12 +222,13 @@ const UserManagement = (() => {
         return (order[a.role] ?? 3) - (order[b.role] ?? 3);
       });
 
-      _renderUserList(_users);
-      _renderRoleList(_users);
-      _renderDeleteList(_users);
+      const visibleUsers = _users.filter(u => u.role !== 'developer' && u.role !== 'updates');
+      _renderUserList(visibleUsers);
+      _renderRoleList(visibleUsers);
+      _renderDeleteList(visibleUsers);
 
       const countEl = document.getElementById('um-user-count');
-      if (countEl) countEl.textContent = `${_users.length} user${_users.length !== 1 ? 's' : ''} total`;
+      if (countEl) countEl.textContent = `${visibleUsers.length} user${visibleUsers.length !== 1 ? 's' : ''} total`;
 
     } catch (err) {
       const list = document.getElementById('um-user-list');
@@ -314,9 +336,10 @@ const UserManagement = (() => {
   }
 
   function _filter(q) {
-    if (!q) return _users;
+    const base = _users.filter(u => u.role !== 'developer');
+    if (!q) return base;
     const lower = q.toLowerCase();
-    return _users.filter(u =>
+    return base.filter(u =>
       u.full_name.toLowerCase().includes(lower) ||
       u.email.toLowerCase().includes(lower)
     );
@@ -331,6 +354,7 @@ const UserManagement = (() => {
     document.getElementById(`um-pane-${name}`)?.classList.add('active');
 
     if (name === 'audit') _loadAuditLog();
+    if (name === 'loginlog') _loadLoginLog();
   }
 
   // Expose for onclick
@@ -350,7 +374,8 @@ const UserManagement = (() => {
 
       const users = [];
       snap.forEach(child => {
-        users.push({ uid: child.key, ...child.val() });
+        const u = { uid: child.key, ...child.val() };
+        if (u.role !== 'developer' && u.role !== 'updates') users.push(u);
       });
 
       // Sort: online first, then by lastSeen desc
@@ -501,7 +526,7 @@ const UserManagement = (() => {
       _renderDeleteList(_users);
 
       const countEl = document.getElementById('um-user-count');
-      if (countEl) countEl.textContent = `${_users.length} user${_users.length !== 1 ? 's' : ''} total`;
+      if (countEl) countEl.textContent = `${visibleUsers.length} user${visibleUsers.length !== 1 ? 's' : ''} total`;
 
     } catch (err) {
       showToast('Failed to remove user.', 'error');
@@ -559,7 +584,7 @@ const UserManagement = (() => {
       }).join('');
 
       const role       = App.currentUser?.role;
-      const canPurge   = role === 'admin' || role === 'developer';
+      const canPurge   = role === 'admin' || role === 'developer' || role === 'updates';
       const purgeBlock = canPurge ? `
         <div class="um-audit-purge-bar">
           <button class="um-purge-toggle" onclick="UserManagement.togglePurgeMenu()">
@@ -676,12 +701,100 @@ const UserManagement = (() => {
     });
   }
 
+
+  // ── Login History ─────────────────────────────────────
+  let _loginLogData = [];
+
+  async function _loadLoginLog() {
+    const el = document.getElementById('um-loginlog-list');
+    if (!el) return;
+    el.innerHTML = '<div class="um-empty"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+
+    try {
+      const snap = await window.fbDB.ref('login_audit')
+        .orderByChild('timestamp')
+        .limitToLast(200)
+        .once('value');
+
+      _loginLogData = [];
+      if (snap.exists()) {
+        snap.forEach(child => {
+          const entry = child.val();
+          if (entry.type !== 'session_restore') {
+            _loginLogData.unshift({ id: child.key, ...entry });
+          }
+        });
+      }
+
+      _renderLoginLog(_loginLogData);
+    } catch(e) {
+      el.innerHTML = '<div class="um-empty">Failed to load login history.</div>';
+    }
+  }
+
+  function _renderLoginLog(entries) {
+    const el = document.getElementById('um-loginlog-list');
+    if (!el) return;
+    if (!entries.length) {
+      el.innerHTML = '<div class="um-empty"><i class="fas fa-history"></i><br>No login history yet.</div>';
+      return;
+    }
+
+    const typeLabel = { login: 'Login', register: 'Registered' };
+    const typeIcon  = { login: 'fa-sign-in-alt', register: 'fa-user-plus' };
+    const typeColor = { login: 'var(--accent-green)', register: '#3498db' };
+
+    el.innerHTML = entries.map(e => {
+      const ts   = e.timestamp ? new Date(e.timestamp) : null;
+      const date = ts ? ts.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+      const time = ts ? ts.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '';
+      const type = e.type || 'login';
+      return `
+        <div class="um-loginlog-entry">
+          <div class="um-loginlog-icon" style="color:${typeColor[type] || 'var(--accent-green)'}">
+            <i class="fas ${typeIcon[type] || 'fa-sign-in-alt'}"></i>
+          </div>
+          <div class="um-loginlog-info">
+            <div class="um-loginlog-name">${e.name || 'Unknown'}</div>
+            <div class="um-loginlog-meta">
+              <span class="um-loginlog-badge" style="background:${typeColor[type]}22;color:${typeColor[type]}">
+                ${typeLabel[type] || type}
+              </span>
+              <span><i class="fab fa-${_browserIcon(e.browser)}"></i> ${e.browser || '—'}</span>
+              <span><i class="fas fa-desktop"></i> ${e.os || '—'}</span>
+            </div>
+          </div>
+          <div class="um-loginlog-time">
+            <div>${date}</div>
+            <div style="color:var(--text-muted);font-size:11px">${time}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function _browserIcon(browser) {
+    const map = { Chrome: 'chrome', Firefox: 'firefox', Safari: 'safari', Edge: 'edge', Opera: 'opera' };
+    return map[browser] ? map[browser] : 'globe';
+  }
+
+  function filterLoginLog() {
+    const search = (document.getElementById('um-loginlog-search')?.value || '').toLowerCase();
+    const type   = document.getElementById('um-loginlog-type')?.value || '';
+    const filtered = _loginLogData.filter(e => {
+      const nameMatch = !search || (e.name || '').toLowerCase().includes(search);
+      const typeMatch = !type  || e.type === type;
+      return nameMatch && typeMatch;
+    });
+    _renderLoginLog(filtered);
+  }
+
   return {
     open, close, switchTab,
     filterUsers, filterRoleUsers, filterDeleteUsers,
     selectForRole, saveRole,
     selectForDelete, checkDeleteConfirm, deleteUser,
     purgeAuditLogs, togglePurgeMenu,
+    filterLoginLog,
   };
 
 })();
