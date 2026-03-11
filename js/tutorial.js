@@ -17,16 +17,16 @@ const Tutorial = (() => {
     {
       title:   'Your Profile',
       icon:    'fa-user',
-      content: `The <strong>User Profile</strong> button shows your name, email, and role
-                (User or Admin). From here you can reset your password at any time.
-                Your role determines what features you have access to.`,
+      content: `The <strong>Profile</strong> button is in the top-right sidebar. It shows
+                your name, email, and role. From here you can edit your display name,
+                reset your password, and toggle Auto-Populate for bulk sample entry.`,
       highlight: '[data-panel="panel-profile"]',
     },
     {
       title:   'Admin Dashboard',
       icon:    'fa-users-cog',
-      content: `The <strong>Admin Dashboard</strong> is only visible to Admins. It's where
-                department heads add storage modules, define sample structures, manage
+      content: `The <strong>Admin Dashboard</strong> is only visible to Admins and Developers.
+                It's where you add storage labs, define sample metadata fields, manage
                 user roles, and review the full audit log of all sample activity.`,
       highlight: '[data-panel="panel-admin"]',
     },
@@ -34,17 +34,25 @@ const Tutorial = (() => {
       title:   'Notifications',
       icon:    'fa-bell',
       content: `The <strong>Notifications</strong> panel is where Admins receive requests
-                from users asking for elevated privileges. Each request can be
-                approved or denied directly from this panel.`,
+                from users asking for elevated access. Each request can be approved
+                or denied directly from this panel.`,
       highlight: '[data-panel="panel-notifications"]',
     },
     {
-      title:   'Settings & Trash Can',
+      title:   'Trash Can',
+      icon:    'fa-trash',
+      content: `The <strong>Trash Can</strong> holds all recently deleted samples.
+                Nothing is gone forever until you choose — you can restore a sample
+                back to its original slot, move it to a new location if the slot is
+                taken, or permanently delete it when you're ready.`,
+      highlight: '[data-panel="panel-trash"]',
+    },
+    {
+      title:   'Settings',
       icon:    'fa-cog',
-      content: `<strong>Settings</strong> is where you log out and access the
-                <strong>Trash Can</strong>. Deleted samples aren't gone forever — they
-                sit in the Trash Can until you permanently delete or restore them
-                to their exact original location.`,
+      content: `<strong>Settings</strong> lets you toggle Light/Dark mode, clear your
+                dashboard layout, and view the Terms & Conditions. Regular users can
+                also request Admin access from here.`,
       highlight: '[data-panel="panel-settings"]',
     },
     {
@@ -71,6 +79,17 @@ const Tutorial = (() => {
   // ── Entry point ───────────────────────────────────────
   function checkAndShow() {
     _show();
+  }
+
+  // ── Get steps filtered by role ────────────────────────
+  function _getSteps() {
+    const role = App.currentUser?.role;
+    const isElevated = role === 'admin' || role === 'developer';
+    return STEPS.filter(s => {
+      // Hide admin step from regular users
+      if (s.highlight === '[data-panel="panel-admin"]' && !isElevated) return false;
+      return true;
+    });
   }
 
   // ── Build & show ──────────────────────────────────────
@@ -103,7 +122,7 @@ const Tutorial = (() => {
         <h2 id="tutorial-title"></h2>
         <p  id="tutorial-content"></p>
         <div id="tutorial-steps">
-          ${STEPS.map((_, i) => `<div class="tutorial-dot" data-i="${i}"></div>`).join('')}
+          ${_getSteps().map((_, i) => `<div class="tutorial-dot" data-i="${i}"></div>`).join('')}
         </div>
         <div id="tutorial-actions">
           <button id="tutorial-skip" onclick="Tutorial.skip()">Skip tour</button>
@@ -118,8 +137,9 @@ const Tutorial = (() => {
 
   // ── Render current step ───────────────────────────────
   function _renderStep() {
-    const step   = STEPS[_currentStep];
-    const isLast = _currentStep === STEPS.length - 1;
+    const steps  = _getSteps();
+    const step   = steps[_currentStep];
+    const isLast = _currentStep === steps.length - 1;
 
     // Animate icon swap
     const iconEl = document.getElementById('tutorial-icon');
@@ -174,9 +194,13 @@ const Tutorial = (() => {
     _spotlight.style.height  = (rect.height + pad * 2) + 'px';
   }
 
-  // ── Position modal away from spotlight ────────────────
+  // ── Position modal ───────────────────────────────────
   function _positionModal(selector) {
     const modal = document.getElementById('tutorial-modal');
+    if (!modal) return;
+
+    // Always keep modal centred horizontally
+    // If there's a spotlight on the right sidebar, shift modal left of centre
     if (!selector) {
       modal.style.left      = '50%';
       modal.style.top       = '50%';
@@ -185,28 +209,37 @@ const Tutorial = (() => {
     }
 
     const target = document.querySelector(selector);
-    if (!target) return;
+    if (!target) {
+      modal.style.left      = '50%';
+      modal.style.top       = '50%';
+      modal.style.transform = 'translate(-50%, -50%)';
+      return;
+    }
 
     const rect   = target.getBoundingClientRect();
     const modalW = 440;
-    const modalH = modal.offsetHeight || 340;
     const margin = 24;
 
-    // Always place modal to the right of sidebar
-    const left = rect.right + margin;
+    // Sidebar is on the right — place modal to the left of it
+    let left = rect.left - modalW - margin;
 
-    // Vertically: center on the button but clamp so modal stays fully on screen
-    let top = rect.top + rect.height / 2 - modalH / 2;
-    top = Math.max(margin, Math.min(window.innerHeight - modalH - margin, top));
+    // If that goes off screen, centre instead
+    if (left < margin) {
+      modal.style.left      = '50%';
+      modal.style.top       = '50%';
+      modal.style.transform = 'translate(-50%, -50%)';
+      return;
+    }
 
+    // Clamp vertically to viewport centre
     modal.style.left      = left + 'px';
-    modal.style.top       = top  + 'px';
-    modal.style.transform = 'none';
+    modal.style.top       = '50%';
+    modal.style.transform = 'translateY(-50%)';
   }
 
   // ── Navigation ────────────────────────────────────────
   function next() {
-    if (_currentStep < STEPS.length - 1) {
+    if (_currentStep < _getSteps().length - 1) {
       _currentStep++;
       _renderStep();
     } else {

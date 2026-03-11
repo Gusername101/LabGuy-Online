@@ -12,7 +12,9 @@ const Dashboard = (() => {
   let _dragOverPos= null;
   let _resizing   = null;
   let _ghost      = null;
-  let _resizePreview = null;
+  let _resizePreview  = null;
+  let _pickerDragging  = false;
+  let _draggedWidget   = null; // { name, icon } while picker drag active
 
   // ── Build 4×4 grid ────────────────────────────────────
   function buildGrid() {
@@ -33,6 +35,54 @@ const Dashboard = (() => {
         slot.innerHTML = `<span class="plus-icon"><i class="fas fa-plus"></i></span>`;
         slot._clickHandler = _onSlotClick;
         slot.addEventListener('click', slot._clickHandler);
+
+        // Accept drops from widget picker
+        slot.addEventListener('dragover', e => {
+          if (slot.classList.contains('filled') || slot.dataset.covered) return;
+          if (!_pickerDragging || !_draggedWidget) return;
+          const def  = WIDGET_DEFAULTS[_draggedWidget.name] || { w: 1, h: 1 };
+          const row  = parseInt(slot.dataset.row);
+          const col  = parseInt(slot.dataset.col);
+          const fits = _isAreaFree(row, col, def.w, def.h);
+          if (fits) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            slot.classList.add('drag-over');
+          } else {
+            // Mark blocked once — stays red until dragend clears it
+            slot.classList.add('picker-drop-blocked');
+          }
+        });
+        slot.addEventListener('dragleave', () => { slot.classList.remove('drag-over'); });
+        slot.addEventListener('drop', e => {
+          slot.classList.remove('drag-over');
+          slot.classList.remove('picker-drop-blocked');
+          e.preventDefault();
+          try {
+            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            const row  = parseInt(slot.dataset.row);
+            const col  = parseInt(slot.dataset.col);
+            if (!slot.classList.contains('filled') && !slot.dataset.covered) {
+              const def = WIDGET_DEFAULTS[data.name] || { w: 1, h: 1 };
+              if (_isAreaFree(row, col, def.w, def.h)) {
+                // Fits at default size
+                _placeWidget(row, col, def.w, def.h, data.name, data.icon);
+                _saveLayout();
+                closeAllPanels();
+                showToast(`${data.name} placed!`, 'success');
+              } else if (def.w === 1 && def.h === 1) {
+                // Widget is naturally 1x1, just place it
+                _placeWidget(row, col, 1, 1, data.name, data.icon);
+                _saveLayout();
+                closeAllPanels();
+                showToast(`${data.name} placed!`, 'success');
+              } else {
+                // Needs more space — warn the user instead of placing broken
+                showToast(`Not enough space here for ${data.name} (needs ${def.w}×${def.h}). Try a different spot.`, 'warn');
+              }
+            }
+          } catch(err) { console.error('Drop failed:', err); }
+        });
         _slots[r][c] = slot;
         grid.appendChild(slot);
       }
@@ -89,8 +139,8 @@ const Dashboard = (() => {
   // ── Add widget ────────────────────────────────────────
   // Default sizes for widgets that need more space
   const WIDGET_DEFAULTS = {
-    'Inventory':    { w: 4, h: 2 },
-    'Lab Capacity': { w: 2, h: 2 },
+    'Inventory':    { w: 2, h: 2 },
+    'Lab Capacity': { w: 1, h: 1 },
   };
 
   function addWidget(name, icon) {
@@ -197,7 +247,7 @@ const Dashboard = (() => {
   // ── Widget click routing ──────────────────────────────
   function _onWidgetClick(name) {
     const handlers = {
-      'Excel Import':  () => ExcelImport.openImporter(),
+      'Import Data':   () => ExcelImport.openImporter(),
       'Add Sample':    () => AddSample.open(),
       'Lab Capacity':  () => LabCapacity.openDetail(),
       'Inventory':     () => {}, // handled by renderWidget
@@ -268,6 +318,69 @@ const Dashboard = (() => {
       h: (rect.height - gap * (ROWS - 1)) / ROWS,
       gap,
     };
+  }
+
+  // ── Picker drag state ─────────────────────────────────
+  function onPickerDragStart(name, icon) {
+    _pickerDragging = true;
+    _draggedWidget  = { name, icon };
+    _showTrashCan();
+    // Reveal all empty slots — colour determined live on dragover
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const s = _slots[r][c];
+        if (!s.classList.contains('filled') && !s.dataset.covered) {
+          s.classList.add('picker-drop-ready');
+        }
+      }
+    }
+  }
+
+  function onPickerDragEnd() {
+    _pickerDragging = false;
+    _draggedWidget  = null;
+    _hideTrashCan();
+    document.querySelectorAll('.picker-drop-ready').forEach(s => s.classList.remove('picker-drop-ready'));
+    document.querySelectorAll('.picker-drop-blocked').forEach(s => s.classList.remove('picker-drop-blocked'));
+    document.querySelectorAll('.picker-drop-ready').forEach(s => s.classList.remove('picker-drop-ready'));
+    document.querySelectorAll('.drag-over').forEach(s => s.classList.remove('drag-over'));
+    document.querySelectorAll('.drag-over').forEach(s => s.classList.remove('drag-over'));
+  }
+
+  // ── Trash can ──────────────────────────────────────────
+  function _showTrashCan() {
+    let tc = document.getElementById('dashboard-trash');
+    if (!tc) {
+      tc = document.createElement('div');
+      tc.id = 'dashboard-trash';
+      tc.innerHTML = `<i class="fas fa-trash-alt" id="dashboard-trash-icon"></i>
+                      <span>Discard</span>`;
+      document.querySelector('.dashboard-area')?.appendChild(tc);
+
+      tc.addEventListener('dragover', e => {
+        e.preventDefault();
+        tc.classList.add('open');
+        document.getElementById('dashboard-trash-icon').className = 'fas fa-trash-open';
+      });
+      tc.addEventListener('dragleave', () => {
+        tc.classList.remove('open');
+        document.getElementById('dashboard-trash-icon').className = 'fas fa-trash-alt';
+      });
+      tc.addEventListener('drop', e => {
+        e.preventDefault();
+        tc.classList.remove('open');
+        document.getElementById('dashboard-trash-icon').className = 'fas fa-trash-alt';
+        onPickerDragEnd();
+        closeAllPanels();
+        showToast('Widget discarded.', 'info');
+      });
+    }
+    tc.classList.add('visible');
+  }
+
+  function _hideTrashCan() {
+    const tc = document.getElementById('dashboard-trash');
+    if (tc) tc.classList.remove('visible', 'open');
   }
 
   // ════════════════════════════════════════════════════
@@ -450,7 +563,43 @@ const Dashboard = (() => {
     _loadLayout();
   }
 
-  return { init, addWidget, removeWidget };
+  // ── Trash can ──────────────────────────────────────────
+  function _showTrashCan() {
+    let tc = document.getElementById('dashboard-trash');
+    if (!tc) {
+      tc = document.createElement('div');
+      tc.id = 'dashboard-trash';
+      tc.innerHTML = `<i class="fas fa-trash-alt" id="dashboard-trash-icon"></i>
+                      <span>Discard</span>`;
+      document.querySelector('.dashboard-area')?.appendChild(tc);
+
+      tc.addEventListener('dragover', e => {
+        e.preventDefault();
+        tc.classList.add('open');
+        document.getElementById('dashboard-trash-icon').className = 'fas fa-trash-open';
+      });
+      tc.addEventListener('dragleave', () => {
+        tc.classList.remove('open');
+        document.getElementById('dashboard-trash-icon').className = 'fas fa-trash-alt';
+      });
+      tc.addEventListener('drop', e => {
+        e.preventDefault();
+        tc.classList.remove('open');
+        document.getElementById('dashboard-trash-icon').className = 'fas fa-trash-alt';
+        onPickerDragEnd();
+        closeAllPanels();
+        showToast('Widget discarded.', 'info');
+      });
+    }
+    tc.classList.add('visible');
+  }
+
+  function _hideTrashCan() {
+    const tc = document.getElementById('dashboard-trash');
+    if (tc) tc.classList.remove('visible', 'open');
+  }
+
+  return { init, addWidget, removeWidget, onPickerDragStart, onPickerDragEnd };
 })();
 
 window.Dashboard = Dashboard;

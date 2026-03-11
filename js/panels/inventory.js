@@ -101,7 +101,6 @@ const Inventory = (() => {
     const sel = document.getElementById('inv-filter-select');
     if (!sel) return;
     sel.innerHTML = `<option value="__all__">All Fields</option>
-      <option value="Location">Location</option>
       ${_fields.map(f => `<option value="${f.key}">${f.label}</option>`).join('')}`;
   }
 
@@ -134,20 +133,18 @@ const Inventory = (() => {
 
     // Header
     thead.innerHTML = `<tr>
-      <th class="inv-th inv-th-id">#</th>
       ${_fields.map(f => `<th class="inv-th">${f.label}</th>`).join('')}
     </tr>`;
 
     // Body
     if (!_filtered.length) {
-      const cols = _fields.length + 2;
+      const cols = _fields.length + 1;
       tbody.innerHTML = `<tr><td colspan="${cols}" class="inv-empty">
         ${_searchTerm ? '<i class="fas fa-search"></i> No results found' : '<i class="fas fa-box-open"></i> No samples in inventory'}
       </td></tr>`;
     } else {
       tbody.innerHTML = _filtered.map(row => `
         <tr class="inv-row" data-id="${row.id}" onclick="Inventory.openSample('${row.id}')">
-          <td class="inv-td inv-td-id">${row.id}</td>
           ${_fields.map(f => `<td class="inv-td">${row[f.key] ?? '—'}</td>`).join('')}
         </tr>`).join('');
     }

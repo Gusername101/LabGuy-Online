@@ -39,7 +39,7 @@ const ExcelImport = (() => {
         <div class="excel-modal-header">
           <div class="excel-modal-icon"><i class="fas fa-file-excel"></i></div>
           <div>
-            <h3>Excel Import</h3>
+            <h3>Import Data</h3>
             <p class="excel-modal-subtitle" id="excel-subtitle">Upload your spreadsheet to import samples</p>
           </div>
           <button class="excel-modal-close" onclick="ExcelImport.close()">

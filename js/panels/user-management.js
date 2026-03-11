@@ -5,8 +5,10 @@
 
 const UserManagement = (() => {
 
-  let _users    = [];
-  let _editUid  = null;
+  let _users            = [];
+  let _editUid          = null;
+  let _listener         = null;
+  let _presenceListener = null;
   let _deleteUid = null;
 
   const ROLE_COLORS = {
@@ -35,6 +37,10 @@ const UserManagement = (() => {
 
   // ── Close ─────────────────────────────────────────────
   function close() {
+    if (_presenceListener) {
+      window.fbDB.ref('users').off('value', _presenceListener);
+      _presenceListener = null;
+    }
     const overlay = document.getElementById('usermgmt-overlay');
     if (!overlay) return;
     overlay.classList.remove('show');
@@ -68,6 +74,12 @@ const UserManagement = (() => {
           </button>
           <button class="um-tab" id="um-tab-audit" onclick="UserManagement.switchTab('audit')">
             <i class="fas fa-history"></i> Audit Log
+          </button>
+          <button class="um-tab" id="um-tab-presence" onclick="UserManagement.switchTab('presence')">
+            <i class="fas fa-circle" style="color:#2ecc71;font-size:9px"></i> Online
+          </button>
+          <button class="um-tab" id="um-tab-loginlog" onclick="UserManagement.switchTab('loginlog')">
+            <i class="fas fa-sign-in-alt"></i> Login History
           </button>
         </div>
 
@@ -108,7 +120,6 @@ const UserManagement = (() => {
                 <select class="um-select" id="um-role-select">
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
-                  <option value="developer">Developer</option>
                 </select>
               </div>
               <button class="um-save-btn" onclick="UserManagement.saveRole()">
@@ -154,6 +165,33 @@ const UserManagement = (() => {
             </div>
           </div>
 
+          <div class="um-tab-pane" id="um-pane-loginlog">
+            <div class="um-loginlog-toolbar">
+              <input id="um-loginlog-search" class="field-input" type="text"
+                     placeholder="Filter by name…"
+                     oninput="UserManagement.filterLoginLog()"/>
+              <select id="um-loginlog-type" class="field-input"
+                      onchange="UserManagement.filterLoginLog()">
+                <option value="">All events</option>
+                <option value="login">Login</option>
+  <option value="register">Registration</option>
+              </select>
+            </div>
+            <div id="um-loginlog-list">
+              <div class="um-empty">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+              </div>
+            </div>
+          </div>
+
+          <div class="um-tab-pane" id="um-pane-presence">
+            <div id="um-presence-list">
+              <div class="um-empty">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <div class="um-footer">
@@ -184,15 +222,15 @@ const UserManagement = (() => {
         return (order[a.role] ?? 3) - (order[b.role] ?? 3);
       });
 
-      _renderUserList(_users);
-      _renderRoleList(_users);
-      _renderDeleteList(_users);
+      const visibleUsers = _users.filter(u => u.role !== 'developer' && u.role !== 'updates');
+      _renderUserList(visibleUsers);
+      _renderRoleList(visibleUsers);
+      _renderDeleteList(visibleUsers);
 
       const countEl = document.getElementById('um-user-count');
-      if (countEl) countEl.textContent = `${_users.length} user${_users.length !== 1 ? 's' : ''} total`;
+      if (countEl) countEl.textContent = `${visibleUsers.length} user${visibleUsers.length !== 1 ? 's' : ''} total`;
 
     } catch (err) {
-      console.error('Failed to load users:', err);
       const list = document.getElementById('um-user-list');
       if (list) list.innerHTML = `<div class="um-empty"><i class="fas fa-exclamation-triangle"></i>Failed to load users.</div>`;
     }
@@ -298,9 +336,10 @@ const UserManagement = (() => {
   }
 
   function _filter(q) {
-    if (!q) return _users;
+    const base = _users.filter(u => u.role !== 'developer');
+    if (!q) return base;
     const lower = q.toLowerCase();
-    return _users.filter(u =>
+    return base.filter(u =>
       u.full_name.toLowerCase().includes(lower) ||
       u.email.toLowerCase().includes(lower)
     );
@@ -311,13 +350,73 @@ const UserManagement = (() => {
     document.querySelectorAll('.um-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.um-tab-pane').forEach(p => p.classList.remove('active'));
     document.getElementById(`um-tab-${name}`)?.classList.add('active');
+    if (name === 'presence') _loadPresence();
     document.getElementById(`um-pane-${name}`)?.classList.add('active');
 
     if (name === 'audit') _loadAuditLog();
+    if (name === 'loginlog') _loadLoginLog();
   }
 
   // Expose for onclick
   function switchTab(name) { _switchTab(name); }
+
+  // ── Presence ──────────────────────────────────────────
+  function _loadPresence() {
+    const el = document.getElementById('um-presence-list');
+    if (!el) return;
+
+    if (_presenceListener) {
+      window.fbDB.ref('users').off('value', _presenceListener);
+    }
+
+    _presenceListener = window.fbDB.ref('users').on('value', snap => {
+      if (!snap.exists()) { el.innerHTML = '<div class="um-empty">No users found.</div>'; return; }
+
+      const users = [];
+      snap.forEach(child => {
+        const u = { uid: child.key, ...child.val() };
+        if (u.role !== 'developer' && u.role !== 'updates') users.push(u);
+      });
+
+      // Sort: online first, then by lastSeen desc
+      users.sort((a, b) => {
+        const aOn = a.presence?.online || false;
+        const bOn = b.presence?.online || false;
+        if (aOn !== bOn) return bOn - aOn;
+        return (b.presence?.lastSeen || 0) - (a.presence?.lastSeen || 0);
+      });
+
+      el.innerHTML = users.map(u => {
+        const online   = u.presence?.online || false;
+        const lastSeen = u.presence?.lastSeen;
+        const timeStr  = _formatLastSeen(lastSeen, online);
+        const roleTag  = `<span class="um-presence-role um-presence-role-${u.role || 'user'}">${u.role || 'user'}</span>`;
+
+        return `
+          <div class="um-presence-row">
+            <div class="um-presence-dot ${online ? 'online' : 'offline'}"></div>
+            <div class="um-presence-info">
+              <span class="um-presence-name">${u.full_name || 'Unknown'}</span>
+              ${roleTag}
+            </div>
+            <div class="um-presence-time">${timeStr}</div>
+          </div>`;
+      }).join('');
+    });
+  }
+
+  function _formatLastSeen(ts, online) {
+    if (online) return '<span class="um-presence-online-label">Online now</span>';
+    if (!ts) return 'Never seen';
+    const diff = Date.now() - ts;
+    const mins  = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days  = Math.floor(diff / 86400000);
+    if (mins < 1)   return 'Just now';
+    if (mins < 60)  return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+  }
 
   // ── Role editing ──────────────────────────────────────
   function selectForRole(uid) {
@@ -349,6 +448,25 @@ const UserManagement = (() => {
       // Write audit log
       await _writeAudit('role_change', `${App.currentUser?.full_name} changed ${user.full_name}'s role from ${user.role} to ${newRole}`);
 
+      // Send personal notification if promoted to admin
+      if (newRole === 'admin' && user.role !== 'admin') {
+        await window.fbDB.ref(`userNotifications/${_editUid}`).push({
+          type:      'role_approved',
+          title:     '🎉 Admin Access Granted!',
+          body:      `Your account has been upgraded to Admin by <strong>${App.currentUser?.full_name || 'an administrator'}</strong>.<br><br>
+                     As an Admin you can now:<br>
+                     <ul class="notif-perm-list">
+                       <li><i class="fas fa-flask"></i> Create and manage storage labs</li>
+                       <li><i class="fas fa-table"></i> Define and edit metadata fields</li>
+                       <li><i class="fas fa-users-cog"></i> Manage user roles and access</li>
+                       <li><i class="fas fa-history"></i> View and purge the full audit log</li>
+                       <li><i class="fas fa-bell"></i> Review and action access requests</li>
+                     </ul>
+                     Refresh the page to see your new permissions!`,
+          timestamp: Date.now(),
+        });
+      }
+
       user.role = newRole;
       showToast(`${user.full_name}'s role updated to ${newRole}`, 'success');
 
@@ -358,7 +476,6 @@ const UserManagement = (() => {
       _renderRoleList(_users);
 
     } catch (err) {
-      console.error('Role update failed:', err);
       showToast('Failed to update role.', 'error');
     }
   }
@@ -409,10 +526,9 @@ const UserManagement = (() => {
       _renderDeleteList(_users);
 
       const countEl = document.getElementById('um-user-count');
-      if (countEl) countEl.textContent = `${_users.length} user${_users.length !== 1 ? 's' : ''} total`;
+      if (countEl) countEl.textContent = `${visibleUsers.length} user${visibleUsers.length !== 1 ? 's' : ''} total`;
 
     } catch (err) {
-      console.error('Delete failed:', err);
       showToast('Failed to remove user.', 'error');
     }
   }
@@ -428,34 +544,248 @@ const UserManagement = (() => {
   async function _loadAuditLog() {
     const el = document.getElementById('um-audit-list');
     if (!el) return;
-    el.innerHTML = `<div class="um-empty"><i class="fas fa-spinner fa-spin"></i>Loading...</div>`;
+    el.innerHTML = '<div class="um-empty"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
 
     try {
-      const snap = await window.fbDB.ref('audit_logs').limitToLast(50).once('value');
-      const entries = [];
-      if (snap.exists()) {
-        snap.forEach(child => entries.unshift({ id: child.key, ...child.val() }));
-      }
-
-      if (!entries.length) {
-        el.innerHTML = `<div class="um-empty"><i class="fas fa-history"></i>No audit entries yet.</div>`;
+      const snap = await window.fbDB.ref('audit_logs').limitToLast(100).once('value');
+      if (!snap.exists()) {
+        el.innerHTML = '<div class="um-empty"><i class="fas fa-history"></i> No audit entries yet.</div>';
         return;
       }
 
-      el.innerHTML = entries.map(e => {
-        const dot   = e.type === 'role_change' ? 'role' : e.type === 'user_delete' ? 'delete' : 'create';
-        const time  = new Date(e.timestamp).toLocaleString();
-        return `
-          <div class="um-audit-entry">
-            <div class="um-audit-dot ${dot}"></div>
-            <div class="um-audit-text">${e.message || '—'}</div>
-            <div class="um-audit-time">${time}</div>
-          </div>`;
+      const val     = snap.val();
+      const entries = Object.entries(val)
+        .map(([key, data]) => ({ id: key, ...data }))
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      const DOT_COLORS = {
+        edit_sample:   'edit',
+        delete_sample: 'delete',
+        move_sample:   'move',
+        role_change:   'role',
+        user_delete:   'delete',
+      };
+
+      const rows = entries.map(e => {
+        const time = e.timestamp ? new Date(e.timestamp).toLocaleString() : '—';
+        const dot  = DOT_COLORS[e.action || e.type] || 'info';
+        let   text = '—';
+
+        if (e.action === 'edit_sample')   text = `<strong>${e.name || 'Unknown'}</strong> edited Sample #${e.sampleId}${e.note ? ' — ' + e.note : ''}`;
+        else if (e.action === 'delete_sample') text = `<strong>${e.name || 'Unknown'}</strong> deleted Sample #${e.sampleId}`;
+        else if (e.action === 'move_sample')   text = `<strong>${e.name || 'Unknown'}</strong> moved Sample #${e.sampleId}${e.note ? ' — ' + e.note : ''}`;
+        else if (e.type)                       text = e.message || '—';
+
+        return `<div class="um-audit-entry">
+          <div class="um-audit-dot ${dot}"></div>
+          <div class="um-audit-text">${text}</div>
+          <div class="um-audit-time">${time}</div>
+        </div>`;
       }).join('');
 
+      const role       = App.currentUser?.role;
+      const canPurge   = role === 'admin' || role === 'developer' || role === 'updates';
+      const purgeBlock = canPurge ? `
+        <div class="um-audit-purge-bar">
+          <button class="um-purge-toggle" onclick="UserManagement.togglePurgeMenu()">
+            <i class="fas fa-trash-alt"></i> Delete Logs
+            <i class="fas fa-chevron-up" id="um-purge-chevron"></i>
+          </button>
+          <div class="um-audit-purge-options" id="um-purge-options" style="display:none">
+            <p class="um-audit-purge-desc">
+              Any log older than the chosen threshold will be permanently removed.
+            </p>
+            <div class="um-purge-grid">
+              <button class="um-purge-btn" onclick="UserManagement.purgeAuditLogs(30)">
+                <span class="um-purge-days">30 days</span>
+                <span class="um-purge-sub">Logs older than 30 days</span>
+              </button>
+              <button class="um-purge-btn" onclick="UserManagement.purgeAuditLogs(90)">
+                <span class="um-purge-days">90 days</span>
+                <span class="um-purge-sub">Logs older than 90 days</span>
+              </button>
+              <button class="um-purge-btn" onclick="UserManagement.purgeAuditLogs(180)">
+                <span class="um-purge-days">180 days</span>
+                <span class="um-purge-sub">Logs older than 180 days</span>
+              </button>
+              <button class="um-purge-btn danger" onclick="UserManagement.purgeAuditLogs(0)">
+                <span class="um-purge-days">Clear All</span>
+                <span class="um-purge-sub">Remove every log entry</span>
+              </button>
+            </div>
+          </div>
+        </div>` : '';
+
+      el.innerHTML = `
+        <div class="um-audit-legend">
+          <div class="um-audit-legend-item"><div class="um-audit-dot edit"></div> Edit</div>
+          <div class="um-audit-legend-item"><div class="um-audit-dot move"></div> Move</div>
+          <div class="um-audit-legend-item"><div class="um-audit-dot delete"></div> Delete</div>
+          <div class="um-audit-legend-item"><div class="um-audit-dot role"></div> Role Change</div>
+        </div>
+        <div class="um-audit-entries">${rows}</div>
+        ${purgeBlock}`;
+
     } catch (err) {
-      el.innerHTML = `<div class="um-empty"><i class="fas fa-exclamation-triangle"></i>Failed to load log.</div>`;
+      el.innerHTML = '<div class="um-empty"><i class="fas fa-exclamation-triangle"></i> Failed to load log.</div>';
     }
+  }
+
+    function togglePurgeMenu() {
+    const options  = document.getElementById('um-purge-options');
+    const chevron  = document.getElementById('um-purge-chevron');
+    if (!options) return;
+    const isOpen = options.style.display !== 'none';
+    options.style.display = isOpen ? 'none' : '';
+    if (chevron) chevron.className = isOpen ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+  }
+
+  async function purgeAuditLogs(days) {
+    const label = days === 0 ? 'all log entries' : `logs older than ${days} days`;
+    const confirmed = await _confirmPurge(label);
+    if (!confirmed) return;
+
+    try {
+      const snap = await window.fbDB.ref('audit_logs').once('value');
+      if (!snap.exists()) { showToast('No logs to delete.', 'info'); return; }
+
+      const cutoff  = days === 0 ? Infinity : Date.now() - (days * 24 * 60 * 60 * 1000);
+      const updates = {};
+      let   count   = 0;
+
+      snap.forEach(child => {
+        const ts = child.val().timestamp || 0;
+        if (days === 0 || ts < cutoff) {
+          updates[child.key] = null;
+          count++;
+        }
+      });
+
+      if (!count) { showToast('No logs matched that threshold.', 'info'); return; }
+
+      await window.fbDB.ref('audit_logs').update(updates);
+      showToast(`${count} log${count !== 1 ? 's' : ''} deleted.`, 'success');
+      _loadAuditLog();
+    } catch (err) {
+      showToast('Failed to purge logs: ' + err.message, 'error');
+    }
+  }
+
+  function _confirmPurge(label) {
+    return new Promise(resolve => {
+      document.getElementById('um-purge-confirm-overlay')?.remove();
+      const overlay = document.createElement('div');
+      overlay.id = 'um-purge-confirm-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9999;';
+      overlay.innerHTML = `
+        <div class="inv-confirm-modal">
+          <div class="inv-confirm-icon" style="color:#e74c3c">
+            <i class="fas fa-trash-alt"></i>
+          </div>
+          <h3 class="inv-confirm-title">Delete ${label}?</h3>
+          <p class="inv-confirm-msg">This will permanently remove ${label}. This cannot be undone.</p>
+          <div class="inv-confirm-btns">
+            <button class="as-btn cancel"
+                    onclick="document.getElementById('um-purge-confirm-overlay').remove(); window._umPurgeResolve(false)">
+              Cancel
+            </button>
+            <button class="inv-sample-delete-btn"
+                    onclick="document.getElementById('um-purge-confirm-overlay').remove(); window._umPurgeResolve(true)">
+              <i class="fas fa-trash"></i> Delete
+            </button>
+          </div>
+        </div>`;
+      window._umPurgeResolve = resolve;
+      overlay.addEventListener('click', e => { if (e.target === overlay) { overlay.remove(); resolve(false); } });
+      document.body.appendChild(overlay);
+    });
+  }
+
+
+  // ── Login History ─────────────────────────────────────
+  let _loginLogData = [];
+
+  async function _loadLoginLog() {
+    const el = document.getElementById('um-loginlog-list');
+    if (!el) return;
+    el.innerHTML = '<div class="um-empty"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+
+    try {
+      const snap = await window.fbDB.ref('login_audit')
+        .orderByChild('timestamp')
+        .limitToLast(200)
+        .once('value');
+
+      _loginLogData = [];
+      if (snap.exists()) {
+        snap.forEach(child => {
+          const entry = child.val();
+          if (entry.type !== 'session_restore') {
+            _loginLogData.unshift({ id: child.key, ...entry });
+          }
+        });
+      }
+
+      _renderLoginLog(_loginLogData);
+    } catch(e) {
+      el.innerHTML = '<div class="um-empty">Failed to load login history.</div>';
+    }
+  }
+
+  function _renderLoginLog(entries) {
+    const el = document.getElementById('um-loginlog-list');
+    if (!el) return;
+    if (!entries.length) {
+      el.innerHTML = '<div class="um-empty"><i class="fas fa-history"></i><br>No login history yet.</div>';
+      return;
+    }
+
+    const typeLabel = { login: 'Login', register: 'Registered' };
+    const typeIcon  = { login: 'fa-sign-in-alt', register: 'fa-user-plus' };
+    const typeColor = { login: 'var(--accent-green)', register: '#3498db' };
+
+    el.innerHTML = entries.map(e => {
+      const ts   = e.timestamp ? new Date(e.timestamp) : null;
+      const date = ts ? ts.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+      const time = ts ? ts.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '';
+      const type = e.type || 'login';
+      return `
+        <div class="um-loginlog-entry">
+          <div class="um-loginlog-icon" style="color:${typeColor[type] || 'var(--accent-green)'}">
+            <i class="fas ${typeIcon[type] || 'fa-sign-in-alt'}"></i>
+          </div>
+          <div class="um-loginlog-info">
+            <div class="um-loginlog-name">${e.name || 'Unknown'}</div>
+            <div class="um-loginlog-meta">
+              <span class="um-loginlog-badge" style="background:${typeColor[type]}22;color:${typeColor[type]}">
+                ${typeLabel[type] || type}
+              </span>
+              <span><i class="fab fa-${_browserIcon(e.browser)}"></i> ${e.browser || '—'}</span>
+              <span><i class="fas fa-desktop"></i> ${e.os || '—'}</span>
+            </div>
+          </div>
+          <div class="um-loginlog-time">
+            <div>${date}</div>
+            <div style="color:var(--text-muted);font-size:11px">${time}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function _browserIcon(browser) {
+    const map = { Chrome: 'chrome', Firefox: 'firefox', Safari: 'safari', Edge: 'edge', Opera: 'opera' };
+    return map[browser] ? map[browser] : 'globe';
+  }
+
+  function filterLoginLog() {
+    const search = (document.getElementById('um-loginlog-search')?.value || '').toLowerCase();
+    const type   = document.getElementById('um-loginlog-type')?.value || '';
+    const filtered = _loginLogData.filter(e => {
+      const nameMatch = !search || (e.name || '').toLowerCase().includes(search);
+      const typeMatch = !type  || e.type === type;
+      return nameMatch && typeMatch;
+    });
+    _renderLoginLog(filtered);
   }
 
   return {
@@ -463,6 +793,8 @@ const UserManagement = (() => {
     filterUsers, filterRoleUsers, filterDeleteUsers,
     selectForRole, saveRole,
     selectForDelete, checkDeleteConfirm, deleteUser,
+    purgeAuditLogs, togglePurgeMenu,
+    filterLoginLog,
   };
 
 })();

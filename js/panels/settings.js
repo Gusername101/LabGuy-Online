@@ -102,17 +102,91 @@ const SettingsPanel = (() => {
 
 
   // ── Load version from Firebase ────────────────────────
+  function showArchiveBlock() {
+    const role  = App.currentUser?.role;
+    const block = document.getElementById('archive-block');
+    if (!block) return;
+    block.style.display = (role === 'admin' || role === 'developer') ? '' : 'none';
+  }
+
   async function loadVersion() {
     const snap = await window.fbDB.ref('system/version').once('value');
     const el   = document.getElementById('settings-version');
     if (!el) return;
     if (snap.exists()) {
-      const val = snap.val();
-      const display = Number.isInteger(val) ? `v${val}.0` : `v${val}`;
+      const val     = snap.val();
+      const display = typeof val === 'number' && Number.isInteger(val) ? `v${val}.0` : `v${val}`;
       el.textContent = display;
+      // Flash if user hasn't seen this version yet
+      const uid      = window.fbAuth?.currentUser?.uid;
+      const seenKey  = `labguy_seen_version_${uid}`;
+      const seen     = localStorage.getItem(seenKey);
+      if (seen !== String(val)) {
+        el.classList.add('version-flash');
+      } else {
+        el.classList.remove('version-flash');
+      }
     } else {
       el.textContent = 'v—';
     }
+  }
+
+  // ── Changelog ──────────────────────────────────────────
+  async function openChangelog() {
+    // Mark as seen
+    const uid     = window.fbAuth?.currentUser?.uid;
+    const el      = document.getElementById('settings-version');
+    const vSnap   = await window.fbDB.ref('system/version').once('value');
+    if (vSnap.exists() && uid) {
+      localStorage.setItem(`labguy_seen_version_${uid}`, String(vSnap.val()));
+      if (el) el.classList.remove('version-flash');
+    }
+
+    const overlay = document.getElementById('changelog-overlay');
+    const body    = document.getElementById('changelog-body');
+    if (!overlay || !body) return;
+    overlay.classList.add('open');
+
+    try {
+      const snap = await window.fbDB.ref('system/changelog')
+        .orderByChild('timestamp')
+        .once('value');
+
+      const entries = [];
+      if (snap.exists()) {
+        snap.forEach(child => entries.unshift({ id: child.key, ...child.val() }));
+      }
+
+      if (!entries.length) {
+        body.innerHTML = '<div class="um-empty"><i class="fas fa-clipboard-list"></i><br>No updates posted yet.</div>';
+        return;
+      }
+
+      body.innerHTML = entries.map((e, i) => `
+        <div class="changelog-entry ${i === 0 ? 'changelog-latest' : ''}">
+          <div class="changelog-entry-header">
+            <span class="changelog-version">v${e.version}</span>
+            <span class="changelog-entry-title">${e.title}</span>
+            ${i === 0 ? '<span class="changelog-new-badge">Latest</span>' : ''}
+            <span class="changelog-date">${e.date || ''}</span>
+          </div>
+          <ul class="changelog-items">
+            ${(e.items || []).map(item => `
+              <li>
+                <span class="changelog-tag changelog-tag-${(item.type||'other').toLowerCase()}">${item.type || 'Other'}</span>
+                ${item.text}
+              </li>`).join('')}
+          </ul>
+        </div>
+      `).join('');
+    } catch(err) {
+      body.innerHTML = '<div class="um-empty">Failed to load update history.</div>';
+    }
+  }
+
+  function closeChangelog() {
+    const overlay = document.getElementById('changelog-overlay');
+    if (overlay) overlay.classList.remove('open');
   }
 
   // ── Clear dashboard layout ─────────────────────────────
@@ -165,7 +239,7 @@ const SettingsPanel = (() => {
     });
   }
 
-  return { toggleTheme, loadTheme, applyTheme, requestAdminAccess, checkPendingRequest, loadVersion, clearDashboard };
+  return { toggleTheme, loadTheme, applyTheme, requestAdminAccess, checkPendingRequest, loadVersion, clearDashboard, showArchiveBlock, openChangelog, closeChangelog };
 })();
 
 window.SettingsPanel = SettingsPanel;

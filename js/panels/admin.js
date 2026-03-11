@@ -315,12 +315,100 @@ const AdminPanel = (() => {
   }
 
   function defineSampleMetadata() { showToast('Define Sample Metadata — coming soon', 'info'); }
-  function openUserManagement()   { showToast('User Management — coming soon', 'info'); }
+  function openUserManagement() { showToast('User Management — coming soon', 'info'); }
+
+  // ── Offline mode ──────────────────────────────────────────
+  const OFFLINE_KEY = 'labguy_offline_mode';
+
+  function loadOfflineModeToggle() {
+    const enabled = localStorage.getItem(OFFLINE_KEY) === 'true';
+    const toggle  = document.getElementById('offline-mode-toggle');
+    if (toggle) toggle.classList.toggle('active', enabled);
+  }
+
+  function toggleOfflineMode() {
+    const current = localStorage.getItem(OFFLINE_KEY) === 'true';
+    const newVal  = !current;
+    localStorage.setItem(OFFLINE_KEY, newVal);
+    const toggle = document.getElementById('offline-mode-toggle');
+    if (toggle) toggle.classList.toggle('active', newVal);
+    if (newVal) {
+      showToast('Offline mode enabled — refresh the page to activate.', 'success');
+    } else {
+      showToast('Offline mode disabled — refresh the page to deactivate.', 'info');
+    }
+  }
+
+  // ── Registration code ──────────────────────────────────
+  const REG_CODE_PATH    = 'system/requireRegistrationCode';
+  const REG_CODE_VAL     = 'system/registrationCode';
+
+  async function loadRegCodeSettings() {
+    loadOfflineModeToggle();
+    try {
+      const [reqSnap, codeSnap] = await Promise.all([
+        window.fbDB.ref(REG_CODE_PATH).once('value'),
+        window.fbDB.ref(REG_CODE_VAL).once('value'),
+      ]);
+      const enabled = reqSnap.exists() && reqSnap.val() === true;
+      const code    = codeSnap.exists() ? codeSnap.val() : '';
+
+      const toggle  = document.getElementById('reg-code-toggle');
+      const editor  = document.getElementById('reg-code-editor');
+      const input   = document.getElementById('admin-reg-code');
+
+      if (toggle) toggle.classList.toggle('active', enabled);
+      if (editor) editor.style.display = enabled ? '' : 'none';
+      if (input && code) input.value = code;
+    } catch(e) {
+      console.error('[AdminPanel] loadRegCodeSettings failed:', e);
+    }
+  }
+
+  async function toggleRegCode() {
+    try {
+      const snap    = await window.fbDB.ref(REG_CODE_PATH).once('value');
+      const current = snap.exists() && snap.val() === true;
+      const newVal  = !current;
+      await window.fbDB.ref(REG_CODE_PATH).set(newVal);
+
+      const toggle = document.getElementById('reg-code-toggle');
+      const editor = document.getElementById('reg-code-editor');
+      if (toggle) toggle.classList.toggle('active', newVal);
+      if (editor) editor.style.display = newVal ? '' : 'none';
+      showToast(`Registration code ${newVal ? 'enabled' : 'disabled'}.`, 'success');
+    } catch(e) {
+      showToast('Failed to update setting.', 'error');
+    }
+  }
+
+  async function saveRegCode() {
+    const input = document.getElementById('admin-reg-code');
+    const code  = input?.value.trim();
+    if (!code) { showToast('Please enter a code first.', 'warn'); return; }
+    try {
+      await window.fbDB.ref(REG_CODE_VAL).set(code);
+      showToast('Access code saved!', 'success');
+    } catch(e) {
+      showToast('Failed to save code.', 'error');
+    }
+  }
+
+  function toggleCodeVisibility() {
+    const input = document.getElementById('admin-reg-code');
+    const btn   = document.getElementById('code-vis-btn');
+    if (!input) return;
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    if (btn) btn.innerHTML = isHidden ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+  }
 
   return {
     open, addLaboratory, addUnitRow, removeUnitRow,
     saveLab, closeModal, toggleNode,
     defineSampleMetadata, openUserManagement,
+    toggleRegCode, saveRegCode, toggleCodeVisibility, loadRegCodeSettings,
+    toggleOfflineMode, loadOfflineModeToggle,
   };
 })();
 
