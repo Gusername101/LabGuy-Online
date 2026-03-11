@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LabGuy — Publish Update</title>
+  <link rel="icon" href="LabGuy.png" type="image/png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg-primary:  #13131f;
+      --bg-card:     #1a1a2e;
+      --bg-input:    #1e1e30;
+      --border-color:#2a2a40;
+      --accent-green:#2ecc71;
+      --accent-red:  #e74c3c;
+      --text-primary:#e8e8f0;
+      --text-secondary:#b0b0c8;
+      --text-muted:  #666680;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    /* ── Auth gate (shown while checking) ── */
+    #auth-gate {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    #auth-gate i { font-size: 32px; color: var(--accent-green); }
+
+    /* ── Main page ── */
+    #publisher-page { display: none; width: 100%; max-width: 620px; }
+
+    .pub-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+    }
+    .pub-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .pub-logo img { width: 36px; height: 36px; border-radius: 8px; }
+    .pub-logo-text {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent-green);
+    }
+    .pub-logo-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+    .pub-logout {
+      background: none;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.2s;
+    }
+    .pub-logout:hover { border-color: var(--accent-red); color: var(--accent-red); }
+
+    /* ── Card ── */
+    .pub-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .pub-card-title {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pub-card-title i { color: var(--accent-green); }
+
+    /* ── Fields ── */
+    .pub-field { margin-bottom: 16px; }
+    .pub-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .pub-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .pub-input:focus { border-color: var(--accent-green); }
+    .pub-input::placeholder { color: var(--text-muted); }
+
+    /* ── Items list ── */
+    .pub-items-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+
+    .pub-item-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .pub-item-type {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      padding: 8px 10px;
+      outline: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: border-color 0.2s;
+    }
+    .pub-item-type:focus { border-color: var(--accent-green); }
+    .pub-item-text {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      padding: 8px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .pub-item-text:focus { border-color: var(--accent-green); }
+    .pub-item-text::placeholder { color: var(--text-muted); }
+    .pub-item-remove {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 6px;
+      border-radius: 6px;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+    .pub-item-remove:hover { color: var(--accent-red); }
+
+    .pub-add-item {
+      background: none;
+      border: 1px dashed var(--border-color);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      padding: 8px;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .pub-add-item:hover { border-color: var(--accent-green); color: var(--accent-green); }
+
+    /* ── Submit ── */
+    .pub-submit {
+      width: 100%;
+      background: var(--accent-green);
+      border: none;
+      border-radius: 10px;
+      color: #13131f;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      padding: 13px;
+      cursor: pointer;
+      margin-top: 20px;
+      letter-spacing: 0.04em;
+      transition: opacity 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .pub-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+    .pub-submit:active { transform: translateY(0); }
+    .pub-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── Toast ── */
+    #pub-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #pub-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    #pub-toast.success { border-color: var(--accent-green); color: var(--accent-green); }
+    #pub-toast.error   { border-color: var(--accent-red);   color: var(--accent-red);   }
+  </style>
+</head>
+<body>
+
+  <!-- Auth gate -->
+  <div id="auth-gate">
+    <i class="fas fa-flask"></i>
+    <span>Verifying access…</span>
+  </div>
+
+  <!-- Publisher page -->
+  <div id="publisher-page">
+    <div class="pub-header">
+      <div class="pub-logo">
+        <img src="LabGuy.png" alt="LabGuy"/>
+        <div>
+          <div class="pub-logo-text">LabGuy</div>
+          <div class="pub-logo-sub">Update Publisher</div>
+        </div>
+      </div>
+      <button class="pub-logout" onclick="doLogout()">
+        <i class="fas fa-sign-out-alt"></i> Log Out
+      </button>
+    </div>
+
+    <div class="pub-card">
+      <div class="pub-card-title">
+        <i class="fas fa-plus-circle"></i> Post New Update
+      </div>
+
+      <div class="pub-field">
+        <div class="pub-label">Version Number</div>
+        <input id="pub-version" class="pub-input" type="text" placeholder="e.g. 1.1"/>
+      </div>
+
+      <div class="pub-field">
+        <div class="pub-label">Update Title</div>
+        <input id="pub-title" class="pub-input" type="text" placeholder="e.g. Bug Fixes & Security Improvements"/>
+      </div>
+
+      <div class="pub-field">
+        <div class="pub-label">Change Items</div>
+        <div class="pub-items-list" id="pub-items-list"></div>
+        <button class="pub-add-item" onclick="addItem()">
+          <i class="fas fa-plus"></i> Add Item
+        </button>
+      </div>
+
+      <button class="pub-submit" id="pub-submit-btn" onclick="publishUpdate()">
+        <i class="fas fa-paper-plane"></i> Publish Update
+      </button>
+    </div>
+  </div>
+
+  <div id="pub-toast"></div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+
+  <script>
+    const ITEM_TYPES = ['New Feature', 'Improvement', 'Bug Fix', 'Security', 'Other'];
+
+    // ── Auth gate ──────────────────────────────────────────
+    window.fbAuth.onAuthStateChanged(async user => {
+      if (!user) {
+        window.location.href = 'index.html';
+        return;
+      }
+      try {
+        const snap    = await window.fbDB.ref(`users/${user.uid}`).once('value');
+        const profile = snap.val();
+        if (!profile || profile.role !== 'updates') {
+          window.location.href = 'index.html';
+          return;
+        }
+        document.getElementById('auth-gate').style.display    = 'none';
+        document.getElementById('publisher-page').style.display = 'block';
+        // Start with one empty item row
+        addItem();
+      } catch(e) {
+        window.location.href = 'index.html';
+      }
+    });
+
+    // ── Items ──────────────────────────────────────────────
+    function addItem() {
+      const list = document.getElementById('pub-items-list');
+      const row  = document.createElement('div');
+      row.className = 'pub-item-row';
+      row.innerHTML = `
+        <select class="pub-item-type">
+          ${ITEM_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}
+        </select>
+        <input class="pub-item-text" type="text" placeholder="Describe the change…"/>
+        <button class="pub-item-remove" onclick="this.parentElement.remove()">
+          <i class="fas fa-times"></i>
+        </button>`;
+      list.appendChild(row);
+      row.querySelector('.pub-item-text').focus();
+    }
+
+    // ── Publish ────────────────────────────────────────────
+    async function publishUpdate() {
+      const version = document.getElementById('pub-version').value.trim();
+      const title   = document.getElementById('pub-title').value.trim();
+
+      if (!version || !title) {
+        toast('Please fill in the version number and title.', 'error');
+        return;
+      }
+
+      const rows  = document.querySelectorAll('.pub-item-row');
+      const items = [];
+      rows.forEach(row => {
+        const type = row.querySelector('.pub-item-type')?.value;
+        const text = row.querySelector('.pub-item-text')?.value.trim();
+        if (text) items.push({ type, text });
+      });
+
+      if (!items.length) {
+        toast('Please add at least one change item.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('pub-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing…';
+
+      try {
+        const now  = new Date();
+        const date = now.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+
+        // Write to changelog
+        await window.fbDB.ref('system/changelog').push({
+          version,
+          title,
+          items,
+          date,
+          timestamp: { '.sv': 'timestamp' },
+        });
+
+        // Update system version number
+        await window.fbDB.ref('system/version').set(version);
+
+        toast(`v${version} published successfully!`, 'success');
+
+        // Reset form
+        document.getElementById('pub-version').value = '';
+        document.getElementById('pub-title').value   = '';
+        document.getElementById('pub-items-list').innerHTML = '';
+        addItem();
+      } catch(e) {
+        console.error(e);
+        toast('Failed to publish. Check console for details.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Publish Update';
+      }
+    }
+
+    // ── Logout ─────────────────────────────────────────────
+    async function doLogout() {
+      await window.fbAuth.signOut();
+      window.location.href = 'index.html';
+    }
+
+    // ── Toast ──────────────────────────────────────────────
+    let _toastTimer;
+    function toast(msg, type = 'success') {
+      const el = document.getElementById('pub-toast');
+      el.textContent = msg;
+      el.className   = `show ${type}`;
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => el.className = '', 3000);
+    }
+  </script>
+</body>
+</html>
