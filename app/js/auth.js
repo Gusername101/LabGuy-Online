@@ -145,6 +145,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const profile = await _resolveProfile(firebaseUser);
         App.currentUser = { uid: firebaseUser.uid, ...profile };
+
+        // Boot updates role back to their page if they navigate here
+        if (profile.role === 'updates') {
+          window.location.replace('updates.html');
+          return;
+        }
+
         _populateProfilePanel();
         showPage('dashboard-page');
         Dashboard.init();
@@ -244,7 +251,7 @@ async function doLogin() {
     const cred    = await window.fbAuth.signInWithEmailAndPassword(email, pass);
     const profile = await _resolveProfile(cred.user);
     App.currentUser = { uid: cred.user.uid, ...profile };
-    if (profile.role !== 'updates') _writeLoginAudit(cred.user.uid, profile.full_name, 'login');
+    if (profile.role !== 'updates' && profile.role !== 'developer') _writeLoginAudit(cred.user.uid, profile.full_name, 'login');
 
     // Updates role gets redirected to the publisher page
     if (profile.role === 'updates') {

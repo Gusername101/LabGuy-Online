@@ -1,484 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Lab Guy</title>
-  <link rel="icon" href="LabGuy.png" type="image/png"/>
-
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <!-- Font Awesome -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
-
-  <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css"/>
-  <link rel="stylesheet" href="css/auth.css"/>
-  <link rel="stylesheet" href="css/dashboard.css"/>
-  <link rel="stylesheet" href="css/panels.css"/>
-  <link rel="stylesheet" href="css/tutorial.css"/>
-  <link rel="stylesheet" href="css/excel-import.css"/>
-  <link rel="stylesheet" href="css/metadata.css"/>
-  <link rel="stylesheet" href="css/add-sample.css"/>
-  <link rel="stylesheet" href="css/user-management.css"/>
-  <link rel="stylesheet" href="css/lab-capacity.css"/>
-  <link rel="stylesheet" href="css/inventory.css"/>
-  <link rel="stylesheet" href="css/trash.css"/>
-  <link rel="stylesheet" href="css/labs.css"/>
+  <title>LabGuy — Laboratory Management</title>
+  <link rel="icon" href="app/LabGuy.png" type="image/png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:#0d0d1a;--bg-card:#13131f;--bg-card2:#1a1a2e;
+      --green:#2ecc71;--green-dim:rgba(46,204,113,0.12);
+      --border:rgba(255,255,255,0.07);--text:#eef0f8;--muted:#666680;--subtle:#2a2a45;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;background:rgba(13,13,26,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+    .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+    .nav-logo img{width:30px;height:30px;border-radius:8px}
+    .nav-logo-text{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--green);letter-spacing:.04em}
+    .nav-links{display:flex;align-items:center;gap:32px}
+    .nav-links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}
+    .nav-links a:hover{color:var(--text)}
+    .nav-cta{background:var(--green)!important;color:#0d0d1a!important;padding:9px 20px;border-radius:8px;font-weight:700!important;font-family:'Rajdhani',sans-serif;font-size:15px!important;letter-spacing:.04em}
+    .nav-cta:hover{opacity:.9;transform:translateY(-1px)}
+    .hero{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px}
+    .hero::after{content:'';position:absolute;top:30%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(46,204,113,0.08) 0%,transparent 70%);pointer-events:none}
+    .hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--green-dim);border:1px solid rgba(46,204,113,0.2);border-radius:20px;padding:6px 16px;font-size:12px;font-weight:600;color:var(--green);letter-spacing:.08em;text-transform:uppercase;margin-bottom:28px;animation:fadeUp .6s ease both}
+    .hero-title{font-family:'Rajdhani',sans-serif;font-size:clamp(52px,8vw,96px);font-weight:700;line-height:1;letter-spacing:-.02em;margin-bottom:12px;animation:fadeUp .6s .1s ease both}
+    .hero-title span{color:var(--green)}
+    .hero-subtitle{font-size:clamp(16px,2vw,20px);color:var(--muted);max-width:540px;line-height:1.6;margin-bottom:48px;animation:fadeUp .6s .2s ease both}
+    .hero-actions{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .3s ease both}
+    .btn-primary{display:inline-flex;align-items:center;gap:10px;background:var(--green);color:#0d0d1a;padding:16px 32px;border-radius:12px;font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;letter-spacing:.04em;text-decoration:none;transition:all .2s;box-shadow:0 0 40px rgba(46,204,113,0.25)}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 60px rgba(46,204,113,0.4)}
+    .btn-secondary{display:inline-flex;align-items:center;gap:10px;background:transparent;color:var(--text);padding:16px 32px;border-radius:12px;border:1px solid var(--border);font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;letter-spacing:.04em;text-decoration:none;transition:all .2s}
+    .btn-secondary:hover{border-color:rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);transform:translateY(-2px)}
+    .hero-note{margin-top:20px;font-size:12px;color:var(--muted);animation:fadeUp .6s .4s ease both}
+    .hero-mockup{position:relative;z-index:1;margin-top:72px;width:100%;max-width:900px;animation:fadeUp .8s .5s ease both}
+    .mockup-window{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.04),0 0 80px rgba(46,204,113,0.06)}
+    .mockup-titlebar{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--bg-card2);border-bottom:1px solid var(--border)}
+    .mockup-dot{width:10px;height:10px;border-radius:50%}
+    .mockup-dot:nth-child(1){background:#ff5f57}
+    .mockup-dot:nth-child(2){background:#ffbd2e}
+    .mockup-dot:nth-child(3){background:#28ca41}
+    .mockup-title{flex:1;text-align:center;font-size:12px;color:var(--muted);font-family:'Rajdhani',sans-serif;letter-spacing:.06em}
+    .mockup-body{display:flex;height:380px}
+    .mockup-sidebar{width:56px;background:var(--bg-card2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:10px}
+    .mockup-nav-btn{width:36px;height:36px;border-radius:10px;background:var(--subtle);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted)}
+    .mockup-nav-btn.active{background:var(--green-dim);color:var(--green)}
+    .mockup-grid{flex:1;padding:16px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);gap:10px}
+    .mockup-widget{background:var(--bg-card2);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:10px;color:var(--muted);font-family:'Rajdhani',sans-serif;letter-spacing:.04em}
+    .mockup-widget i{font-size:16px}
+    .mockup-widget.green{border-color:rgba(46,204,113,0.2);background:var(--green-dim);color:var(--green)}
+    .mockup-widget.span2{grid-column:span 2}
+    .mockup-widget.span2h{grid-row:span 2}
+    .mockup-widget.empty{background:transparent;border:1px dashed rgba(255,255,255,0.05)}
+    section{position:relative;z-index:1;padding:100px 24px;max-width:1100px;margin:0 auto}
+    .section-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:12px}
+    .section-title{font-family:'Rajdhani',sans-serif;font-size:clamp(32px,5vw,52px);font-weight:700;line-height:1.1;margin-bottom:16px}
+    .section-sub{font-size:16px;color:var(--muted);max-width:520px;line-height:1.6;margin-bottom:56px}
+    .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+    .feature-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:28px;transition:border-color .2s,transform .2s}
+    .feature-card:hover{border-color:rgba(46,204,113,0.2);transform:translateY(-3px)}
+    .feature-icon{width:44px;height:44px;border-radius:12px;background:var(--green-dim);display:flex;align-items:center;justify-content:center;color:var(--green);font-size:18px;margin-bottom:16px}
+    .feature-title{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;color:var(--text)}
+    .feature-desc{font-size:14px;color:var(--muted);line-height:1.6}
+    .download-section{max-width:1100px;margin:0 auto;padding:0 24px 100px;position:relative;z-index:1}
+    .download-card{background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:56px 48px;display:flex;align-items:center;justify-content:space-between;gap:40px;flex-wrap:wrap;position:relative;overflow:hidden}
+    .download-card::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;background:radial-gradient(circle,rgba(46,204,113,0.08) 0%,transparent 70%);pointer-events:none}
+    .download-info{flex:1;min-width:260px}
+    .download-title{font-family:'Rajdhani',sans-serif;font-size:36px;font-weight:700;margin-bottom:8px}
+    .download-sub{font-size:15px;color:var(--muted);line-height:1.6;margin-bottom:24px}
+    .download-meta{display:flex;gap:20px;flex-wrap:wrap}
+    .download-meta-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+    .download-meta-item i{color:var(--green)}
+    .download-actions{display:flex;flex-direction:column;gap:12px;flex-shrink:0}
+    .stats-row{display:flex;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:80px}
+    .stat{flex:1;padding:32px 24px;text-align:center;border-right:1px solid var(--border)}
+    .stat:last-child{border-right:none}
+    .stat-value{font-family:'Rajdhani',sans-serif;font-size:40px;font-weight:700;color:var(--green);line-height:1;margin-bottom:6px}
+    .stat-label{font-size:13px;color:var(--muted)}
+    footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:32px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+    .footer-logo{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--green)}
+    .footer-links{display:flex;gap:24px}
+    .footer-links a{font-size:13px;color:var(--muted);text-decoration:none;transition:color .2s}
+    .footer-links a:hover{color:var(--text)}
+    .footer-copy{font-size:12px;color:var(--muted)}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:768px){nav{padding:16px 20px}.nav-links{display:none}.hero{padding:100px 20px 60px}.mockup-body{height:220px}.mockup-grid{grid-template-columns:repeat(2,1fr)}.mockup-widget.span2{grid-column:span 1}section{padding:60px 20px}.download-card{padding:32px 24px}.stats-row{flex-direction:column}.stat{border-right:none;border-bottom:1px solid var(--border)}.stat:last-child{border-bottom:none}footer{padding:24px 20px;flex-direction:column;text-align:center}.footer-links{justify-content:center}}
+  </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════
-     PAGE: Login
-════════════════════════════════════════════════════════ -->
-<div id="login-page" class="page auth-page active">
-  <div class="auth-card">
-    <div class="auth-logo">
-      <img src="LabGuy.png" alt="Lab Guy Logo"
-           onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex'"/>
-      <div id="logo-fallback" class="logo-fallback">
-        <i class="fas fa-flask"></i>
+<nav>
+  <a class="nav-logo" href="#">
+    <img src="app/LabGuy.png" alt="LabGuy"/>
+    <span class="nav-logo-text">LabGuy</span>
+  </a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#download">Download</a>
+    <a href="app/index.html">Web App</a>
+    <a href="app/index.html" class="nav-cta"><i class="fas fa-flask"></i> Open App</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge"><i class="fas fa-flask"></i> Laboratory Management System</div>
+  <h1 class="hero-title">Your lab.<br><span>Organised.</span></h1>
+  <p class="hero-subtitle">A modern, real-time laboratory management system built for research departments. Track samples, manage storage, and collaborate — all in one place.</p>
+  <div class="hero-actions">
+    <a href="#download" class="btn-primary"><i class="fas fa-download"></i> Download for Windows</a>
+    <a href="app/index.html" class="btn-secondary"><i class="fas fa-globe"></i> Open Web App</a>
+  </div>
+  <p class="hero-note"><i class="fas fa-lock"></i> Secure · Real-time · Free for your department</p>
+
+  <div class="hero-mockup">
+    <div class="mockup-window">
+      <div class="mockup-titlebar">
+        <div class="mockup-dot"></div>
+        <div class="mockup-dot"></div>
+        <div class="mockup-dot"></div>
+        <span class="mockup-title">LabGuy — Laboratory Management</span>
       </div>
-      <div class="brand-name">Lab Guy</div>
-    </div>
-    <h2 class="auth-title">Login</h2>
-    <div class="input-group">
-      <i class="fas fa-envelope"></i>
-      <input id="login-email" class="field-input" type="email" placeholder="Email"/>
-    </div>
-    <div class="input-group">
-      <i class="fas fa-lock"></i>
-      <input id="login-pass" class="field-input" type="password" placeholder="Password"
-             onkeydown="if(event.key==='Enter') doLogin()"/>
-    </div>
-    <button class="btn btn-green" onclick="doLogin()">Login</button>
-    <div class="auth-footer">
-      <button class="auth-link" onclick="showPage('register-page'); _checkRegCodeRequired()">Sign Up</button>
-      <button class="auth-link"  onclick="doForgotPassword()">Forgot Password?</button>
+      <div class="mockup-body">
+        <div class="mockup-sidebar">
+          <div class="mockup-nav-btn active"><i class="fas fa-th-large"></i></div>
+          <div class="mockup-nav-btn"><i class="fas fa-bell"></i></div>
+          <div class="mockup-nav-btn"><i class="fas fa-user"></i></div>
+          <div class="mockup-nav-btn"><i class="fas fa-cog"></i></div>
+          <div class="mockup-nav-btn" style="margin-top:auto"><i class="fas fa-plus"></i></div>
+        </div>
+        <div class="mockup-grid">
+          <div class="mockup-widget green span2 span2h"><i class="fas fa-boxes"></i>INVENTORY</div>
+          <div class="mockup-widget green"><i class="fas fa-flask"></i>LAB CAPACITY</div>
+          <div class="mockup-widget"><i class="fas fa-plus-circle"></i>ADD SAMPLE</div>
+          <div class="mockup-widget"><i class="fas fa-file-export"></i>EXPORT</div>
+          <div class="mockup-widget"><i class="fas fa-file-excel"></i>IMPORT</div>
+          <div class="mockup-widget empty"></div>
+          <div class="mockup-widget empty"></div>
+          <div class="mockup-widget empty"></div>
+          <div class="mockup-widget empty"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     PAGE: Register
-════════════════════════════════════════════════════════ -->
-<div id="register-page" class="page auth-page">
-  <div class="auth-card">
-    <h2 class="auth-title">Create Account</h2>
-    <div class="input-group">
-      <i class="fas fa-user"></i>
-      <div class="input-row">
-        <input id="reg-first" class="field-input" type="text" placeholder="First Name"/>
-        <input id="reg-last"  class="field-input" type="text" placeholder="Last Name"/>
+<section id="features">
+  <div class="section-label">What it does</div>
+  <h2 class="section-title">Everything your lab needs.<br>Nothing it doesn't.</h2>
+  <p class="section-sub">Built directly around the feedback of research departments. No bloat, no unnecessary complexity.</p>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-value">4×4</div><div class="stat-label">Customisable dashboard grid</div></div>
+    <div class="stat"><div class="stat-value">Live</div><div class="stat-label">Real-time sync across all users</div></div>
+    <div class="stat"><div class="stat-value">3</div><div class="stat-label">Role tiers for access control</div></div>
+    <div class="stat"><div class="stat-value">90d</div><div class="stat-label">Login audit log retention</div></div>
+  </div>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-boxes"></i></div>
+      <div class="feature-title">Sample Inventory</div>
+      <div class="feature-desc">Track every sample with custom metadata fields. Filter, search, move, and export with full audit trails on every change.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-th-large"></i></div>
+      <div class="feature-title">Drag & Drop Dashboard</div>
+      <div class="feature-desc">Build your own workspace. Drag widgets onto the grid, resize them, and save your layout. Everyone gets their own personalised view.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-flask"></i></div>
+      <div class="feature-title">Lab Structure & Capacity</div>
+      <div class="feature-desc">Model your physical lab storage down to the deepest level. Monitor capacity in real time and see exactly what's stored where.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+      <div class="feature-title">Role-Based Security</div>
+      <div class="feature-desc">Three-tier role system with optional registration codes, login audit logs, and admin-controlled access. Your data stays yours.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-file-export"></i></div>
+      <div class="feature-title">Import & Export</div>
+      <div class="feature-desc">Import samples from Excel or CSV. Export filtered inventory to Excel or PDF with custom column selection and live preview.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-users-cog"></i></div>
+      <div class="feature-title">User Management</div>
+      <div class="feature-desc">Manage your team's access, monitor who's online, review login history, and promote users — all from a single admin panel.</div>
+    </div>
+  </div>
+</section>
+
+<div class="download-section" id="download">
+  <div class="download-card">
+    <div class="download-info">
+      <div class="download-title">LabGuy for Windows</div>
+      <p class="download-sub">The full LabGuy experience as a native desktop application. No browser required — just install and log in.</p>
+      <div class="download-meta">
+        <div class="download-meta-item"><i class="fas fa-windows"></i> Windows 10 / 11</div>
+        <div class="download-meta-item"><i class="fas fa-tag"></i> Version 1.0</div>
+        <div class="download-meta-item"><i class="fas fa-wifi"></i> Requires internet</div>
       </div>
     </div>
-    <div class="input-group">
-      <i class="fas fa-envelope"></i>
-      <input id="reg-email" class="field-input" type="email" placeholder="Email"/>
-    </div>
-    <div class="input-group">
-      <i class="fas fa-lock"></i>
-      <input id="reg-pass" class="field-input" type="password" placeholder="Password"/>
-    </div>
-    <div class="input-group" id="reg-code-group" style="display:none">
-      <i class="fas fa-key"></i>
-      <input id="reg-code" class="field-input" type="password" placeholder="Lab Access Code"/>
-    </div>
-    <div class="checkbox-row">
-      <input type="checkbox" id="terms-check" disabled/>
-      <label>
-        I agree to the
-        <span class="tc-link" onclick="openTermsModal()">Terms and Conditions</span>
-        <span class="tc-hint">(Read terms first)</span>
-      </label>
-    </div>
-    <button class="btn btn-green" onclick="doRegister()">Sign Up</button>
-    <div class="auth-footer">
-      <button class="auth-link-plain" onclick="showPage('login-page')">Back to Login</button>
+    <div class="download-actions">
+      <a href="https://github.com/gusername101/LabGuy-Online/releases/latest" class="btn-primary">
+        <i class="fas fa-download"></i> Download .exe
+      </a>
+      <a href="app/index.html" class="btn-secondary">
+        <i class="fas fa-globe"></i> Use Web Version
+      </a>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     PAGE: Dashboard
-════════════════════════════════════════════════════════ -->
-<div id="dashboard-page" class="page dashboard-page">
-
-  <nav class="sidebar-nav" aria-label="Main navigation">
-    <button class="nav-btn" data-panel="panel-profile"
-            title="Profile" onclick="ProfilePanel.open()">
-      <i class="fas fa-user"></i>
-    </button>
-    <button class="nav-btn" data-panel="panel-admin" id="nav-admin-btn"
-            title="Admin Dashboard" onclick="AdminPanel.open()">
-      <i class="fas fa-users-cog"></i>
-    </button>
-    <button class="nav-btn" data-panel="panel-notifications"
-            title="Notifications" onclick="openPanel('panel-notifications')">
-      <i class="fas fa-bell"></i>
-    </button>
-    <button class="nav-btn" data-panel="panel-trash"
-            title="Trash Can" onclick="openPanel('panel-trash')" id="nav-trash-btn">
-      <i class="fas fa-trash"></i>
-    </button>
-    <button class="nav-btn" data-panel="panel-settings"
-            title="Settings" onclick="openPanel('panel-settings')">
-      <i class="fas fa-cog"></i>
-    </button>
-    <button class="nav-btn nav-add" data-panel="panel-widgets"
-            title="Add Widget" onclick="openPanel('panel-widgets')">
-      <i class="fas fa-plus"></i>
-    </button>
-  </nav>
-
-  <main class="dashboard-area">
-    <div class="widget-grid" id="widget-grid"></div>
-  </main>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════
-     SIDE PANEL: Widget Picker
-════════════════════════════════════════════════════════ -->
-<aside class="side-panel" id="panel-widgets">
-  <div class="panel-inner">
-    <div class="panel-title">Available Widgets</div>
-    <div class="panel-divider"></div>
-    <div id="widget-list"></div>
+<footer>
+  <div class="footer-logo">LabGuy</div>
+  <div class="footer-links">
+    <a href="app/index.html">Web App</a>
+    <a href="app/terms_and_conditions.html">Terms</a>
+    <a href="#download">Download</a>
   </div>
-  <div class="panel-footer">
-    <button class="panel-footer-btn red" onclick="closeAllPanels()">
-      <i class="fas fa-times"></i> Close
-    </button>
-  </div>
-</aside>
-
-<!-- ═══════════════════════════════════════════════════════
-     SIDE PANEL: Profile Settings
-════════════════════════════════════════════════════════ -->
-<aside class="side-panel" id="panel-profile">
-  <div class="panel-inner">
-    <div class="panel-title">Profile Settings</div>
-    <div class="panel-subtitle">Manage your account and preferences</div>
-    <div class="panel-divider"></div>
-    <div class="profile-card">
-      <div class="avatar" id="profile-avatar">?</div>
-      <div class="profile-info">
-        <h3 id="profile-name">—</h3>
-        <p  id="profile-email">—</p>
-        <div class="role" id="profile-role">Role: —</div>
-      </div>
-    </div>
-    <div class="panel-section-header">Account Actions</div>
-    <div class="panel-section">
-      <button class="action-btn" style="background:var(--accent-blue)"
-              onclick="ProfilePanel.editProfile()">
-        <i class="fas fa-user-edit"></i> Edit Profile Information
-      </button>
-      <button class="action-btn" style="background:var(--accent-orange)"
-              onclick="ProfilePanel.resetPassword()">
-        <i class="fas fa-key"></i> Reset Password
-      </button>
-    </div>
-    <div class="panel-section-header">Preferences</div>
-    <div class="panel-section">
-      <button class="action-btn" style="background:#3a3a5c;color:var(--text-secondary)"
-              onclick="ProfilePanel.openAutoPopulate()">
-        <i class="fas fa-magic"></i> Auto-Populate
-      </button>
-    </div>
-  </div>
-  <div class="panel-footer">
-    <button class="panel-footer-btn dark" onclick="closeAllPanels()">
-      <i class="fas fa-user"></i>
-    </button>
-  </div>
-</aside>
-
-<!-- ═══════════════════════════════════════════════════════
-     SIDE PANEL: Notifications
-════════════════════════════════════════════════════════ -->
-<aside class="side-panel" id="panel-notifications">
-  <div class="panel-inner">
-    <div class="panel-title-row">
-      <span class="panel-title-icon"><i class="fas fa-bell"></i></span>
-      <div class="panel-title">Notifications</div>
-    </div>
-    <div class="panel-title-underline"></div>
-    <div class="notif-header-user">
-      <i class="fas fa-user" style="font-size:11px"></i>
-      <span id="notif-user-id">—</span>
-      <span class="notif-badge" id="notif-role-badge">User</span>
-    </div>
-    <div id="notif-list">
-      <div class="notif-empty" id="notif-loading">
-        <i class="fas fa-spinner fa-spin"></i><p>Loading...</p>
-      </div>
-    </div>
-    <div class="notif-footer" id="notif-count">— notifications</div>
-  </div>
-  <div class="panel-footer">
-    <button class="panel-footer-btn dark" onclick="closeAllPanels()">
-      <i class="fas fa-bell"></i>
-    </button>
-  </div>
-</aside>
-
-<!-- ═══════════════════════════════════════════════════════
-     SIDE PANEL: Settings
-════════════════════════════════════════════════════════ -->
-<aside class="side-panel" id="panel-trash">
-  <div class="panel-inner">
-    <div class="panel-title">Trash Can</div>
-    <div class="panel-subtitle">Deleted samples — restore or permanently remove</div>
-    <div class="panel-divider"></div>
-    <div id="trash-content">
-      <div class="trash-empty-state">
-        <i class="fas fa-trash-alt"></i>
-        <p>Trash is empty</p>
-      </div>
-    </div>
-  </div>
-  <div class="panel-footer">
-    <button class="panel-footer-btn dark" onclick="closeAllPanels()">
-      <i class="fas fa-trash"></i>
-    </button>
-  </div>
-</aside>
-
-<aside class="side-panel" id="panel-settings">
-  <div class="panel-inner">
-    <div class="panel-title">Settings</div>
-    <div class="panel-subtitle">Manage your account settings and preferences</div>
-    <div class="panel-divider"></div>
-
-    <!-- Appearance -->
-    <div class="panel-section-header">Appearance</div>
-    <div class="panel-section">
-      <div class="settings-toggle-row">
-        <div class="settings-toggle-info">
-          <i class="fas fa-adjust" style="color:var(--accent-green)"></i>
-          <div>
-            <div class="settings-toggle-label">Light Mode</div>
-            <div class="settings-toggle-desc">Switch to a lighter interface</div>
-          </div>
-        </div>
-        <button class="theme-toggle" id="theme-toggle-btn"
-                onclick="SettingsPanel.toggleTheme()">
-          <div class="theme-toggle-thumb"></div>
-        </button>
-      </div>
-    </div>
-
-    <!-- Account -->
-    <div class="panel-section-header">Account</div>
-    <div class="panel-section" style="display:flex;flex-direction:column;gap:8px">
-      <button class="action-btn" style="background:var(--accent-red)"
-              onclick="doLogout()">
-        <i class="fas fa-sign-out-alt"></i> Logout
-      </button>
-      <div id="admin-request-block">
-        <button class="action-btn" style="background:var(--accent-blue)"
-                onclick="SettingsPanel.requestAdminAccess()" id="admin-request-btn">
-          <i class="fas fa-user-shield"></i> Request Admin Access
-        </button>
-      </div>
-    </div>
-
-    <!-- Dashboard & Records -->
-    <div class="panel-section-header">Dashboard & Records</div>
-    <div class="panel-section" style="display:flex;flex-direction:column;gap:8px">
-      <button class="action-btn" style="background:var(--bg-input);color:var(--text-secondary)"
-              onclick="SettingsPanel.clearDashboard()">
-        <i class="fas fa-th-large"></i> Clear Dashboard Layout
-      </button>
-      <div id="archive-block" style="display:none">
-        <button class="action-btn" style="background:var(--bg-input);color:var(--text-secondary);width:100%"
-                onclick="Backup.download()">
-          <i class="fas fa-archive"></i> Download Lab Archive
-        </button>
-        <p style="font-size:11px;color:var(--text-muted);margin:8px 0 0 0;line-height:1.5">
-          Full snapshot of all labs, inventory and metadata. Keep in a safe location for record-keeping.
-        </p>
-      </div>
-    </div>
-
-    <!-- Legal & About -->
-    <div class="panel-section-header">Legal & About</div>
-    <div class="panel-section" style="display:flex;flex-direction:column;gap:8px">
-      <button class="action-btn" style="background:var(--bg-input);color:var(--text-secondary)"
-              onclick="openTermsModal()">
-        <i class="fas fa-file-alt"></i> Terms and Conditions
-      </button>
-      <div class="settings-about-row">
-        <span class="settings-about-label"><i class="fas fa-flask"></i> LabGuy</span>
-        <button class="settings-about-version" id="settings-version" onclick="SettingsPanel.openChangelog()">v—</button>
-      </div>
-    </div>
-  </div>
-  <div class="panel-footer">
-    <button class="panel-footer-btn dark" onclick="closeAllPanels()">
-      <i class="fas fa-cog"></i>
-    </button>
-  </div>
-</aside>
-
-<!-- ═══════════════════════════════════════════════════════
-     SIDE PANEL: Admin Dashboard
-════════════════════════════════════════════════════════ -->
-<aside class="side-panel side-panel-wide" id="panel-admin">
-  <div class="panel-inner">
-    <div class="panel-title">Admin Dashboard</div>
-    <div class="panel-subtitle">Manage your laboratory and system settings</div>
-    <div class="panel-divider"></div>
-
-    <!-- Lab browser -->
-    <div class="lab-browser-header">
-      <span class="panel-section-header" style="margin:0">Laboratories</span>
-      <button class="lab-browser-add-btn" onclick="AdminPanel.addLaboratory()">
-        <i class="fas fa-plus"></i> New Lab
-      </button>
-    </div>
-    <div id="lab-browser" class="lab-browser"></div>
-
-    <div class="panel-divider"></div>
-    <div class="panel-section-header">System Administration</div>
-    <div class="panel-section">
-      <button class="action-btn" style="background:var(--accent-green)"
-              onclick="MetadataPanel.open()">
-        <i class="fas fa-database"></i> Define Sample Metadata
-      </button>
-      <button class="action-btn" style="background:var(--accent-red)"
-              onclick="UserManagement.open()">
-        <i class="fas fa-users-cog"></i> User Management
-      </button>
-    </div>
-
-    <div class="panel-divider"></div>
-    <div class="panel-section-header">Offline Access</div>
-    <div class="panel-section">
-      <div class="settings-toggle-row">
-        <div class="settings-toggle-info">
-          <i class="fas fa-wifi-slash" style="color:var(--accent-green)"></i>
-          <div>
-            <div class="settings-toggle-label">Offline Mode</div>
-            <div class="settings-toggle-desc">Keeps the app working if the internet drops. Any changes made will sync automatically once the connection returns. A page refresh is needed to activate.</div>
-          </div>
-        </div>
-        <button class="theme-toggle" id="offline-mode-toggle"
-                onclick="AdminPanel.toggleOfflineMode()">
-          <div class="theme-toggle-thumb"></div>
-        </button>
-      </div>
-    </div>
-
-    <div class="panel-divider"></div>
-    <div class="panel-section-header">Security</div>
-    <div class="panel-section">
-      <div class="settings-toggle-row">
-        <div class="settings-toggle-info">
-          <i class="fas fa-key" style="color:var(--accent-green)"></i>
-          <div>
-            <div class="settings-toggle-label">Require Access Code</div>
-            <div class="settings-toggle-desc">New users must enter a code to register</div>
-          </div>
-        </div>
-        <button class="theme-toggle" id="reg-code-toggle"
-                onclick="AdminPanel.toggleRegCode()">
-          <div class="theme-toggle-thumb"></div>
-        </button>
-      </div>
-      <div id="reg-code-editor" style="display:none;margin-top:12px">
-        <div class="input-group" style="margin-bottom:8px">
-          <i class="fas fa-lock"></i>
-          <input id="admin-reg-code" class="field-input" type="password"
-                 placeholder="Set access code…"/>
-          <button class="show-hide-btn" onclick="AdminPanel.toggleCodeVisibility()"
-                  id="code-vis-btn" title="Show/hide code">
-            <i class="fas fa-eye"></i>
-          </button>
-        </div>
-        <button class="action-btn" style="background:var(--accent-green)"
-                onclick="AdminPanel.saveRegCode()">
-          <i class="fas fa-save"></i> Save Code
-        </button>
-      </div>
-    </div>
-  </div>
-  <div class="panel-footer">
-    <button class="panel-footer-btn dark" onclick="closeAllPanels()">
-      <i class="fas fa-users-cog"></i>
-    </button>
-  </div>
-</aside>
-
-
-<!-- ═══════════════════════════════════════════════════════
-     CHANGELOG MODAL
-═══════════════════════════════════════════════════════ -->
-<div id="changelog-overlay">
-  <div class="changelog-modal">
-    <div class="changelog-header">
-      <div class="changelog-title"><i class="fas fa-clipboard-list"></i> Update History</div>
-      <button class="changelog-close" onclick="SettingsPanel.closeChangelog()">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="changelog-body" id="changelog-body">
-      <div class="um-empty"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
-    </div>
-  </div>
-</div>
-<!-- Overlay -->
-<div id="overlay"></div>
-<!-- Toast -->
-<div id="toast" aria-live="polite"></div>
-
-<!-- ══════════════════════════════════════════════════════
-     SCRIPTS — Load order:
-       1. Firebase CDN (must be first)
-       2. firebase-config.js (initializes Firebase)
-       3. firebase-db.js (DB helpers)
-       4. app.js (global state/routing)
-       5. dashboard.js + panels
-       6. auth.js (last — depends on everything above)
-═══════════════════════════════════════════════════════ -->
-
-<!-- 1. Firebase SDK (compat version — no bundler needed) -->
-<!-- GridStack JS -->
-
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<!-- App scripts — order matters -->
-<script src="js/firebase-config.js"></script>
-<script src="js/firebase-db.js"></script>
-<script src="js/app.js"></script>
-<script src="js/maintenance.js"></script>
-<script src="js/dashboard.js"></script>
-<script src="js/panels/widgets.js"></script>
-<script src="js/panels/notifications.js"></script>
-<script src="js/panels/profile.js"></script>
-<script src="js/panels/admin.js"></script>
-<script src="js/panels/settings.js"></script>
-<!-- SheetJS for Excel parsing -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-<script src="js/panels/excel-import.js"></script>
-<script src="js/panels/metadata.js"></script>
-<script src="js/panels/add-sample.js"></script>
-<script src="js/panels/user-management.js"></script>
-<script src="js/panels/lab-capacity.js"></script>
-<script src="js/panels/inventory.js"></script>
-<script src="js/panels/bulk-add.js"></script>
-<script src="js/panels/trash.js"></script>
-<script src="js/panels/export-data.js"></script>
-<script src="js/panels/backup.js"></script>
-<script src="js/tutorial.js"></script>
-<script src="js/auth.js"></script>
+  <div class="footer-copy">Built for research. Made with care.</div>
+</footer>
 
 </body>
 </html>

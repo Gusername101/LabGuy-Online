@@ -26,7 +26,6 @@
   cursor: pointer;
   transition: var(--transition);
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 .nav-btn:hover, .nav-btn.active {
   background: var(--bg-input);
@@ -391,4 +390,95 @@
   font-family: 'Rajdhani', sans-serif;
   letter-spacing: 0.05em;
   flex-shrink: 0;
+}
+
+/* ============================================================
+   MOBILE — max-width: 768px
+   ============================================================ */
+@media (max-width: 768px) {
+
+  /* ── Layout ─────────────────────────────────────────────── */
+  .dashboard-page { flex-direction: column; }
+
+  .dashboard-area {
+    padding: 16px 12px 80px 12px; /* bottom pad for nav bar */
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  /* ── Sidebar → bottom bar ───────────────────────────────── */
+  .sidebar-nav {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    top: auto;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    gap: 0;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+    z-index: 200;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.3);
+    border-radius: 0;
+  }
+
+  .nav-btn {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    font-size: 18px;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+  }
+  .nav-btn:hover, .nav-btn.active {
+    transform: translateY(-3px);
+    background: rgba(46,204,113,0.1);
+    border-color: transparent;
+  }
+  .nav-btn.nav-add {
+    width: 52px; height: 52px;
+    border-radius: 16px;
+    background: var(--accent-green);
+    border: none;
+  }
+  .nav-btn.nav-add:hover { transform: translateY(-3px) scale(1.06); }
+
+  /* ── Widget grid → single column stack ─────────────────── */
+  .widget-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: auto;
+    min-height: calc(100vh - 120px);
+  }
+
+  .widget-slot {
+    width: 100% !important;
+    min-height: 120px;
+    grid-column: unset !important;
+    grid-row: unset !important;
+  }
+
+  /* Inventory and other tall widgets get more height */
+  .widget-slot[data-widget-name="Inventory"] { min-height: 260px; }
+
+  /* ── Hide resize handle on mobile ───────────────────────── */
+  .widget-resize-handle { display: none !important; }
+
+  /* ── Drag ghost hidden on mobile ────────────────────────── */
+  #drag-ghost { display: none !important; }
+
+  /* ── Trash can repositioned ─────────────────────────────── */
+  #dashboard-trash {
+    bottom: 80px; /* above nav bar */
+  }
+
+  /* ── Toast above nav bar ────────────────────────────────── */
+  #toast {
+    bottom: 80px;
+    right: 12px;
+    left: 12px;
+    text-align: center;
+  }
 }

